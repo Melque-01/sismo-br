@@ -126,11 +126,11 @@ SISMOS_TESTAR_DB=1 python -m unittest discover -s tests -v
 
 ## Estado atual da publicação
 
-- VM Ubuntu Server 26.04 em `127.0.0.1` (usuário `melque`).
+- VM Ubuntu Server 26.04 no VirtualBox, rede NAT (SSH `127.0.0.1:2222`), usuário `melque`.
 - Serviço `sismos-br` em `http://127.0.0.1:8080` (a porta 80 já é usada pelo
   projeto Geo Buss).
 - Túnel rápido: `<tunel-efemero>`
-  (URL temporária — muda se o serviço/túnel reiniciar).
+  (URL temporária - muda se o serviço/túnel reiniciar).
 - Base: **5.141 eventos** no recorte do Brasil (5.044 SISBRA + 97 FDSN).
 
 Detalhes em [docs/DADOS.md](docs/DADOS.md),

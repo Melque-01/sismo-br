@@ -16,6 +16,7 @@ import sys
 import paramiko
 
 HOST = os.getenv("VM_HOST", "127.0.0.1")
+PORTA = int(os.getenv("VM_PORT", "22"))
 USUARIO = os.getenv("VM_USER", "melque")
 SENHA = os.getenv("VM_PASS", "")
 CHAVE = os.getenv("VM_KEY", "")
@@ -26,6 +27,7 @@ def _cliente() -> paramiko.SSHClient:
     cliente.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     parametros = dict(
         hostname=HOST,
+        port=PORTA,
         username=USUARIO,
         timeout=15,
         banner_timeout=20,
