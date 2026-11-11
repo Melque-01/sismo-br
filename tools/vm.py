@@ -18,19 +18,24 @@ import paramiko
 HOST = os.getenv("VM_HOST", "127.0.0.1")
 USUARIO = os.getenv("VM_USER", "melque")
 SENHA = os.getenv("VM_PASS", "")
+CHAVE = os.getenv("VM_KEY", "")
 
 
 def _cliente() -> paramiko.SSHClient:
     cliente = paramiko.SSHClient()
     cliente.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    cliente.connect(
-        HOST,
+    parametros = dict(
+        hostname=HOST,
         username=USUARIO,
-        password=SENHA,
         timeout=15,
         banner_timeout=20,
         auth_timeout=20,
     )
+    if CHAVE:
+        parametros["key_filename"] = os.path.expanduser(CHAVE)
+    else:
+        parametros["password"] = SENHA
+    cliente.connect(**parametros)
     return cliente
 
 

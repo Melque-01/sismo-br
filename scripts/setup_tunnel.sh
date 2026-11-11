@@ -8,9 +8,14 @@ MODO="${1:-quick}"
 
 if ! command -v cloudflared >/dev/null 2>&1; then
   echo "==> Instalando cloudflared"
-  ARQUIVO="/tmp/cloudflared-linux-amd64.deb"
+  case "$(uname -m)" in
+    x86_64|amd64) ARQUITETURA="amd64" ;;
+    aarch64|arm64) ARQUITETURA="arm64" ;;
+    *) echo "ARQUITETURA não suportada: $(uname -m)" >&2; exit 1 ;;
+  esac
+  ARQUIVO="/tmp/cloudflared-linux-${ARQUITETURA}.deb"
   curl -fsSL -o "${ARQUIVO}" \
-    "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb"
+    "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${ARQUITETURA}.deb"
   sudo dpkg -i "${ARQUIVO}"
 fi
 
