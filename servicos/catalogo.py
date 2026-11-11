@@ -77,6 +77,16 @@ def _hora_da_linha(linha: str) -> str:
     return achado.group(1) + achado.group(2)
 
 
+def _fim_hora(linha: str) -> int:
+    """Coluna logo depois da hora (ou 18, quando a hora é desconhecida).
+
+    A latitude começa depois da hora e pode invadir a coluna 18 quando tem 7 ou
+    8 caracteres; nenhuma leitura por coluna fixa é segura antes deste ponto.
+    """
+    hora = _hora_da_linha(linha)
+    return 11 + len(hora) if hora else 18
+
+
 def _data_hora_sisbra(ano: str, mmdd: str, hora: str) -> Optional[datetime]:
     """Monta o instante do evento em UTC.
 
@@ -126,13 +136,45 @@ def _autor_sisbra(resto: str) -> str:
     return resto[1:fecha].strip()
 
 
+def _campos_plausiveis(campos: Dict[str, object]) -> bool:
+    """Guardas de coerência dos campos de texto, iguais nos dois caminhos.
+
+    Só valem para campos vazios (desconhecidos) ou dentro do formato conhecido.
+    Qualquer outro valor indica que a linha está deslocada e o slice fixo pegou
+    pedaço do campo vizinho.
+    """
+    uf = campos["uf"]
+    if uf and uf != "-" and not (len(uf) == 2 and uf.isalpha()):
+        return False
+    categoria = campos["categoria"]
+    if categoria and categoria not in CATEGORIAS_SISBRA:
+        return False
+    tipo_magnitude = campos["tipo_magnitude"]
+    if tipo_magnitude and tipo_magnitude != "-1":
+        if len(tipo_magnitude) != 1 or not tipo_magnitude.isdigit():
+            return False
+    return True
+
+
 def _campos_colunas_fixas(linha: str) -> Optional[Dict[str, object]]:
-    """Campos crus lidos nas colunas do brief. None se lat/lon não convertem."""
+    """Campos crus lidos nas colunas do brief.
+
+    Devolve None quando o slice não é confiável: lat/lon não convertem, a
+    latitude começou na coluna 18 (o slice `[19:25]` perderia o sinal de menos)
+    ou a longitude passou da coluna 31 (perderia precisão). Nesses casos quem
+    chama tenta o fallback.
+    """
+    fim_hora = _fim_hora(linha)
+    if 18 >= fim_hora and linha[18:19] not in (" ", ""):
+        return None
+    if linha[32:33] not in (" ", ""):
+        return None
+
     lat = _float_ou_none(_campo(linha, 19, 25))
     lon = _float_ou_none(_campo(linha, 26, 32))
     if lat is None or lon is None:
         return None
-    return {
+    campos = {
         "lat": lat,
         "lon": lon,
         "uf": _campo(linha, 37, 39),
@@ -143,17 +185,22 @@ def _campos_colunas_fixas(linha: str) -> Optional[Dict[str, object]]:
         "localidade": _campo(linha, 66, 89),
         "autor": _autor_sisbra(linha[89:]),
     }
+    if not _campos_plausiveis(campos):
+        return None
+    return campos
 
 
 def _campos_colunas_deslocadas(linha: str) -> Optional[Dict[str, object]]:
     """Recupera linhas em que as colunas depois da longitude andaram.
 
     O catálogo tem linhas escritas com hora de 9 caracteres (`132539.31`) ou
-    latitude/longitude de largura variável (`-4.81`, `-08.2635`). O deslocamento
-    medido no início da longitude (posição 26, de +1 a +4 nas linhas
-    desalinhadas do catálogo) **não** vale para a linha inteira: os campos
-    seguintes ficam separados por um espaço e voltam a encostar nas colunas
-    originais perto do fim. Por isso recuperamos a
+    latitude/longitude de largura variável (`-4.81`, `-08.2635`). Essas
+    coordenadas começam na coluna 18, uma antes do slice do brief, e é ali que
+    está o sinal de menos: a busca começa depois da hora para não perder o `-`.
+    O deslocamento medido no início da longitude (posição 26, de +1 a +4 nas
+    linhas desalinhadas do catálogo) **não** vale para a linha inteira: os
+    campos seguintes ficam separados por um espaço e voltam a encostar nas
+    colunas originais perto do fim. Por isso recuperamos a
     latitude/longitude pelo primeiro par de números do trecho e os campos do
     meio (`err st depth mag tm CAT Io [Af]`) por tokens; localidade e autor
     continuam nas colunas fixas, que essas linhas não deslocam.
@@ -161,7 +208,8 @@ def _campos_colunas_deslocadas(linha: str) -> Optional[Dict[str, object]]:
     Devolve None quando a linha não encaixa no formato: melhor descartar do que
     gravar coordenada ou magnitude errada.
     """
-    achados = list(_COORDENADA.finditer(linha[19:40]))
+    inicio = max(18, _fim_hora(linha))
+    achados = list(_COORDENADA.finditer(linha[inicio:40]))
     if len(achados) < 2:
         return None
     achado_lat, achado_lon = achados[0], achados[1]
@@ -170,27 +218,20 @@ def _campos_colunas_deslocadas(linha: str) -> Optional[Dict[str, object]]:
         return None
 
     # Deslocamento do início da longitude em relação à coluna 26 do brief.
-    deslocamento = achado_lon.start() + 19 - 26
-    if not 0 <= deslocamento <= 8:
+    deslocamento = achado_lon.start() + inicio - 26
+    if not -8 <= deslocamento <= 8:
         return None
-    fim_lon = achado_lon.start() + 19 + len(achado_lon.group())
+    fim_lon = achado_lon.start() + inicio + len(achado_lon.group())
 
     tokens = linha[fim_lon:66].split()
     if len(tokens) not in (7, 8):
         return None
     uf, profundidade, magnitude, tipo_magnitude, categoria = tokens[1:6]
 
-    if len(uf) != 2 or not uf.isalpha():
-        return None
-    if categoria not in CATEGORIAS_SISBRA:
-        return None
-    if tipo_magnitude != "-1":
-        if len(tipo_magnitude) != 1 or not tipo_magnitude.isdigit():
-            return None
     if _float_ou_none(profundidade) is None or _float_ou_none(magnitude) is None:
         return None
 
-    return {
+    campos = {
         "lat": float(achado_lat.group()),
         "lon": float(achado_lon.group()),
         "uf": uf,
@@ -201,6 +242,9 @@ def _campos_colunas_deslocadas(linha: str) -> Optional[Dict[str, object]]:
         "localidade": _campo(linha, 66, 89),
         "autor": _autor_sisbra(linha[89:]),
     }
+    if not _campos_plausiveis(campos):
+        return None
+    return campos
 
 
 def _montar_evento(
@@ -209,7 +253,9 @@ def _montar_evento(
     """Aplica as regras de normalização comuns a todas as linhas."""
     lat = campos["lat"]
     lon = campos["lon"]
-    if not -90.0 <= lat <= 90.0 or not -180.0 <= lon <= 180.0:
+    # Recorte do Brasil: fora dele a linha não entra no mapa (e o sinal
+    # invertido, que jogaria o evento no hemisfério norte, cai aqui).
+    if not -34.0 <= lat <= 6.0 or not -74.0 <= lon <= -34.0:
         return None
 
     mmdd = _campo(linha, 6, 10)
