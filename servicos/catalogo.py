@@ -11,6 +11,7 @@ Evento normalizado (mesmas chaves para todas as fontes):
 """
 
 import hashlib
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
@@ -18,6 +19,16 @@ FONTE_SISBRA = "SISBRA"
 
 # Horário oficial do Brasil (UTC-3), usado quando a hora do SISBRA traz "L".
 FUSO_LOCAL = timezone(timedelta(hours=-3))
+
+# Categorias usadas pelo catálogo (A..E = histórico, I = instrumental, R = ?).
+CATEGORIAS_SISBRA = frozenset("ABCDEIR")
+
+# Hora no começo da linha: HH, HHMM, HHMMSS, com fração opcional e sufixo L.
+_HORA = re.compile(r"(\d{2}(?:\d{2}(?:\d{2}(?:\.\d+)?)?)?)(L?)(?=[\s]|$)")
+_HORA_PARTES = re.compile(r"^(\d{2})(\d{2})?(\d{2})?(?:\.(\d+))?(L?)$")
+
+# Número com ponto decimal: usado para achar latitude/longitude fora da coluna.
+_COORDENADA = re.compile(r"-?\d{1,3}\.\d+")
 
 
 def evento_id_sisbra(
@@ -53,6 +64,19 @@ def _float_ou_none(texto: str) -> Optional[float]:
         return None
 
 
+def _hora_da_linha(linha: str) -> str:
+    """Texto da hora do evento, ou "" quando ausente/inválida.
+
+    A coluna começa em 11, mas a hora pode ocupar 9 caracteres quando tem
+    fração de segundo (`132539.31`), empurrando as colunas seguintes. Por isso
+    lemos por regex em vez de fatiar 8 caracteres fixos.
+    """
+    achado = _HORA.match(linha[11:20])
+    if not achado:
+        return ""
+    return achado.group(1) + achado.group(2)
+
+
 def _data_hora_sisbra(ano: str, mmdd: str, hora: str) -> Optional[datetime]:
     """Monta o instante do evento em UTC.
 
@@ -65,23 +89,23 @@ def _data_hora_sisbra(ano: str, mmdd: str, hora: str) -> Optional[datetime]:
     if len(mmdd) != 4 or not mmdd.isdigit():
         return None
 
-    local = hora.endswith("L") or hora.endswith("l")
-    digitos = hora[:-1] if local else hora
-    if not digitos.isdigit() or len(digitos) not in (2, 4, 6):
+    partes = _HORA_PARTES.match(hora)
+    if not partes:
         return None
 
-    hora_int = int(digitos[0:2])
-    minuto_int = int(digitos[2:4]) if len(digitos) >= 4 else 0
-    segundo_int = int(digitos[4:6]) if len(digitos) >= 6 else 0
+    fracao = partes.group(4) or ""
+    microssegundo = int((fracao + "000000")[:6]) if fracao else 0
+    local = partes.group(5) == "L"
 
     try:
         instante = datetime(
             int(ano),
             int(mmdd[0:2]),
             int(mmdd[2:4]),
-            hora_int,
-            minuto_int,
-            segundo_int,
+            int(partes.group(1)),
+            int(partes.group(2) or 0),
+            int(partes.group(3) or 0),
+            microssegundo,
             tzinfo=FUSO_LOCAL if local else timezone.utc,
         )
     except ValueError:
@@ -91,15 +115,129 @@ def _data_hora_sisbra(ano: str, mmdd: str, hora: str) -> Optional[datetime]:
     return instante
 
 
-def _autor_sisbra(resto: str) -> Optional[str]:
+def _autor_sisbra(resto: str) -> str:
     """Nome entre parênteses que abre o resto da linha, se existir."""
     resto = resto.strip()
     if not resto.startswith("("):
-        return None
+        return ""
     fecha = resto.find(")")
     if fecha < 0:
-        return resto[1:].strip() or None
-    return resto[1:fecha].strip() or None
+        return resto[1:].strip()
+    return resto[1:fecha].strip()
+
+
+def _campos_colunas_fixas(linha: str) -> Optional[Dict[str, object]]:
+    """Campos crus lidos nas colunas do brief. None se lat/lon não convertem."""
+    lat = _float_ou_none(_campo(linha, 19, 25))
+    lon = _float_ou_none(_campo(linha, 26, 32))
+    if lat is None or lon is None:
+        return None
+    return {
+        "lat": lat,
+        "lon": lon,
+        "uf": _campo(linha, 37, 39),
+        "profundidade": _campo(linha, 40, 45),
+        "magnitude": _campo(linha, 46, 49),
+        "tipo_magnitude": _campo(linha, 50, 52),
+        "categoria": _campo(linha, 53, 56),
+        "localidade": _campo(linha, 66, 89),
+        "autor": _autor_sisbra(linha[89:]),
+    }
+
+
+def _campos_colunas_deslocadas(linha: str) -> Optional[Dict[str, object]]:
+    """Recupera linhas em que as colunas depois da longitude andaram.
+
+    O catálogo tem linhas escritas com hora de 9 caracteres (`132539.31`) ou
+    latitude/longitude de largura variável (`-4.81`, `-08.2635`). O deslocamento
+    medido no início da longitude (posição 26, de +1 a +4 nas linhas
+    desalinhadas do catálogo) **não** vale para a linha inteira: os campos
+    seguintes ficam separados por um espaço e voltam a encostar nas colunas
+    originais perto do fim. Por isso recuperamos a
+    latitude/longitude pelo primeiro par de números do trecho e os campos do
+    meio (`err st depth mag tm CAT Io [Af]`) por tokens; localidade e autor
+    continuam nas colunas fixas, que essas linhas não deslocam.
+
+    Devolve None quando a linha não encaixa no formato: melhor descartar do que
+    gravar coordenada ou magnitude errada.
+    """
+    achados = list(_COORDENADA.finditer(linha[19:40]))
+    if len(achados) < 2:
+        return None
+    achado_lat, achado_lon = achados[0], achados[1]
+    fim_lat = achado_lat.start() + len(achado_lat.group())
+    if achado_lon.start() < fim_lat:
+        return None
+
+    # Deslocamento do início da longitude em relação à coluna 26 do brief.
+    deslocamento = achado_lon.start() + 19 - 26
+    if not 0 <= deslocamento <= 8:
+        return None
+    fim_lon = achado_lon.start() + 19 + len(achado_lon.group())
+
+    tokens = linha[fim_lon:66].split()
+    if len(tokens) not in (7, 8):
+        return None
+    uf, profundidade, magnitude, tipo_magnitude, categoria = tokens[1:6]
+
+    if len(uf) != 2 or not uf.isalpha():
+        return None
+    if categoria not in CATEGORIAS_SISBRA:
+        return None
+    if tipo_magnitude != "-1":
+        if len(tipo_magnitude) != 1 or not tipo_magnitude.isdigit():
+            return None
+    if _float_ou_none(profundidade) is None or _float_ou_none(magnitude) is None:
+        return None
+
+    return {
+        "lat": float(achado_lat.group()),
+        "lon": float(achado_lon.group()),
+        "uf": uf,
+        "profundidade": profundidade,
+        "magnitude": magnitude,
+        "tipo_magnitude": tipo_magnitude,
+        "categoria": categoria,
+        "localidade": _campo(linha, 66, 89),
+        "autor": _autor_sisbra(linha[89:]),
+    }
+
+
+def _montar_evento(
+    linha: str, ano: str, campos: Dict[str, object]
+) -> Optional[Dict[str, object]]:
+    """Aplica as regras de normalização comuns a todas as linhas."""
+    lat = campos["lat"]
+    lon = campos["lon"]
+    if not -90.0 <= lat <= 90.0 or not -180.0 <= lon <= 180.0:
+        return None
+
+    mmdd = _campo(linha, 6, 10)
+    hora = _hora_da_linha(linha)
+
+    tipo_magnitude = campos["tipo_magnitude"] or None
+    profundidade = _float_ou_none(campos["profundidade"])
+    if profundidade == 0.0:
+        profundidade = None
+    magnitude = _float_ou_none(campos["magnitude"])
+    if tipo_magnitude == "-1" or magnitude == 0.0:
+        magnitude = None
+
+    return {
+        "fonte": FONTE_SISBRA,
+        "evento_id": evento_id_sisbra(ano, mmdd, hora, lat, lon, magnitude),
+        "data_hora": _data_hora_sisbra(ano, mmdd, hora),
+        "ano": int(ano),
+        "lat": lat,
+        "lon": lon,
+        "profundidade_km": profundidade,
+        "magnitude": magnitude,
+        "tipo_magnitude": tipo_magnitude,
+        "categoria": campos["categoria"] or None,
+        "uf": campos["uf"] or None,
+        "localidade": campos["localidade"] or None,
+        "autor": campos["autor"] or None,
+    }
 
 
 def _ler_linha_sisbra(linha: str) -> Optional[Dict[str, object]]:
@@ -115,44 +253,13 @@ def _ler_linha_sisbra(linha: str) -> Optional[Dict[str, object]]:
     lon_txt = _campo(linha, 26, 32)
     if lat_txt in ("", "--") or lon_txt in ("", "--"):
         return None
-    lat = _float_ou_none(lat_txt)
-    lon = _float_ou_none(lon_txt)
-    if lat is None or lon is None:
-        # Linhas com largura variável desalinham as colunas: descartamos em vez
-        # de gravar coordenada errada.
+
+    campos = _campos_colunas_fixas(linha)
+    if campos is None:
+        campos = _campos_colunas_deslocadas(linha)
+    if campos is None:
         return None
-    if not -90.0 <= lat <= 90.0 or not -180.0 <= lon <= 180.0:
-        return None
-
-    mmdd = _campo(linha, 6, 10)
-    hora = _campo(linha, 11, 19)
-    uf = _campo(linha, 37, 39) or None
-    categoria = _campo(linha, 53, 56) or None
-    tipo_magnitude = _campo(linha, 50, 52) or None
-
-    profundidade = _float_ou_none(_campo(linha, 40, 45))
-    if profundidade == 0.0:
-        profundidade = None
-
-    magnitude = _float_ou_none(_campo(linha, 46, 49))
-    if tipo_magnitude == "-1" or magnitude == 0.0:
-        magnitude = None
-
-    return {
-        "fonte": FONTE_SISBRA,
-        "evento_id": evento_id_sisbra(ano, mmdd, hora, lat, lon, magnitude),
-        "data_hora": _data_hora_sisbra(ano, mmdd, hora),
-        "ano": int(ano),
-        "lat": lat,
-        "lon": lon,
-        "profundidade_km": profundidade,
-        "magnitude": magnitude,
-        "tipo_magnitude": tipo_magnitude,
-        "categoria": categoria,
-        "uf": uf,
-        "localidade": _campo(linha, 66, 89) or None,
-        "autor": _autor_sisbra(linha[89:]),
-    }
+    return _montar_evento(linha, ano, campos)
 
 
 def ler_sisbra(texto: str) -> List[Dict[str, object]]:
