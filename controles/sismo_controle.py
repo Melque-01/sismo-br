@@ -1,16 +1,16 @@
-"""Controller das consultas de sismos: validação central dos filtros.
+"""Controller das consultas de sismos: validação central dos filtros e API."""
 
-Os endpoints em si ficam no fim deste módulo (Task 7 do plano); aqui está a
-regra única de validação usada por todos eles.
-"""
-
+import traceback
 from datetime import date
 from typing import Dict, Mapping, Optional
 
 import config
+from controles import respostas
+from modelo import sismo as modelo_sismo
 from servicos.catalogo import CATEGORIAS_SISBRA
 
 FONTES = ("todas", "SISBRA", "FDSN")
+METRICAS = ("contagem", "normalizada")
 
 
 class ErroValidacao(Exception):
@@ -143,3 +143,231 @@ def montar_filtros(dados: Mapping[str, object]) -> Dict[str, object]:
         "categoria": categoria,
         "celula": celula,
     }
+
+
+# --- Endpoints da API -----------------------------------------------------
+
+
+def _resposta_api(calcular):
+    """Executa o cálculo do endpoint traduzindo erros em respostas JSON."""
+    try:
+        return respostas.json_resposta(calcular())
+    except ErroValidacao as erro:
+        return respostas.json_resposta({"ok": False, "erro": str(erro)}, 400)
+    except Exception:  # noqa: BLE001 - banco fora do ar, SQL inválido etc.
+        traceback.print_exc()
+        return respostas.json_resposta(
+            {
+                "ok": False,
+                "erro": "Banco de dados indisponível. Tente novamente em instantes.",
+            },
+            503,
+        )
+
+
+def _coordenada(
+    dados: Mapping[str, object], chave: str, rotulo: str, minimo: float, maximo: float
+) -> float:
+    """Lê uma coordenada obrigatória e confere se está dentro do recorte."""
+    texto = _texto(dados, chave)
+    if not texto:
+        raise ErroValidacao("Informe {}.".format(rotulo))
+    try:
+        valor = float(texto)
+    except ValueError:
+        raise ErroValidacao(
+            "{} inválida: use um número entre {} e {}.".format(rotulo, minimo, maximo)
+        )
+    if not minimo <= valor <= maximo:
+        raise ErroValidacao(
+            "{} fora do Brasil: use um valor entre {} e {}.".format(
+                rotulo, minimo, maximo
+            )
+        )
+    return valor
+
+
+def _metrica(dados: Mapping[str, object]) -> str:
+    metrica = (_texto(dados, "metrica") or "contagem").lower()
+    if metrica not in METRICAS:
+        raise ErroValidacao("Métrica inválida: use contagem ou normalizada.")
+    return metrica
+
+
+def _limite(dados: Mapping[str, object]) -> int:
+    texto = _texto(dados, "limite")
+    if not texto:
+        return config.LIMITE_PONTOS
+    try:
+        limite = int(texto)
+    except ValueError:
+        raise ErroValidacao(
+            "Limite inválido: use um número entre 1 e {}.".format(config.TETO_PONTOS)
+        )
+    if not 1 <= limite <= config.TETO_PONTOS:
+        raise ErroValidacao(
+            "Limite inválido: use um número entre 1 e {}.".format(config.TETO_PONTOS)
+        )
+    return limite
+
+
+def _feature_celula(celula: Dict[str, object]) -> Dict[str, object]:
+    propriedades = {
+        chave: celula[chave]
+        for chave in (
+            "n",
+            "mag_max",
+            "mag_media",
+            "densidade_km2",
+            "ano_ini",
+            "ano_fim",
+            "area_km2",
+        )
+    }
+    return {
+        "type": "Feature",
+        "geometry": celula["geometry"],
+        "properties": propriedades,
+    }
+
+
+def _feature_ponto(ponto: Dict[str, object]) -> Dict[str, object]:
+    propriedades = {
+        chave: ponto.get(chave)
+        for chave in (
+            "id",
+            "ano",
+            "data_hora",
+            "magnitude",
+            "profundidade_km",
+            "uf",
+            "localidade",
+            "fonte",
+        )
+    }
+    return {
+        "type": "Feature",
+        "geometry": {
+            "type": "Point",
+            "coordinates": [ponto["lon"], ponto["lat"]],
+        },
+        "properties": propriedades,
+    }
+
+
+def api_densidade(dados):
+    """GET /api/densidade — grade de contagem por célula."""
+
+    def calcular():
+        metrica = _metrica(dados)
+        filtros = montar_filtros(dados)
+        resultado = modelo_sismo.densidade(filtros, filtros["celula"], metrica)
+        return {
+            "ok": True,
+            "celula": filtros["celula"],
+            "metrica": metrica,
+            "total_eventos": resultado["total"],
+            "cortes": resultado["cortes"],
+            "celulas": {
+                "type": "FeatureCollection",
+                "features": [
+                    _feature_celula(celula) for celula in resultado["celulas"]
+                ],
+            },
+        }
+
+    return _resposta_api(calcular)
+
+
+def api_sismos(dados):
+    """GET /api/sismos — pontos para a camada de calor."""
+
+    def calcular():
+        filtros = montar_filtros(dados)
+        limite = _limite(dados)
+        pontos = modelo_sismo.pontos(filtros, limite)
+        return {
+            "ok": True,
+            "limite": limite,
+            "total": len(pontos),
+            "sismos": {
+                "type": "FeatureCollection",
+                "features": [_feature_ponto(ponto) for ponto in pontos],
+            },
+        }
+
+    return _resposta_api(calcular)
+
+
+def api_celula(dados):
+    """GET /api/celula?lat=&lon= — eventos da célula clicada."""
+
+    def calcular():
+        lat = _coordenada(dados, "lat", "Latitude", -34.0, 6.0)
+        lon = _coordenada(dados, "lon", "Longitude", -74.0, -34.0)
+        filtros = montar_filtros(dados)
+        eventos = modelo_sismo.eventos_celula(filtros, lat, lon, filtros["celula"])
+        return {
+            "ok": True,
+            "lat": lat,
+            "lon": lon,
+            "celula": filtros["celula"],
+            "total": len(eventos),
+            "eventos": eventos,
+        }
+
+    return _resposta_api(calcular)
+
+
+def api_evento(dados):
+    """GET /api/evento?id= — ficha completa de um evento."""
+
+    def calcular():
+        texto = _texto(dados, "id")
+        try:
+            evento_id = int(texto)
+        except ValueError:
+            raise ErroValidacao("Id de evento inválido.")
+        evento = modelo_sismo.buscar_evento(evento_id)
+        if evento is None:
+            raise ErroValidacao("Evento não encontrado.")
+        return {"ok": True, "evento": evento}
+
+    return _resposta_api(calcular)
+
+
+def api_estatisticas(dados):
+    """GET /api/estatisticas — resumo do recorte filtrado."""
+
+    def calcular():
+        filtros = montar_filtros(dados)
+        return {"ok": True, **modelo_sismo.estatisticas(filtros)}
+
+    return _resposta_api(calcular)
+
+
+def api_filtros(dados):
+    """GET /api/filtros — opções reais para os selects."""
+
+    def calcular():
+        return {"ok": True, **modelo_sismo.opcoes_filtros()}
+
+    return _resposta_api(calcular)
+
+
+def api_status(dados):
+    """GET /api/status — saúde do banco e contagens."""
+
+    def calcular():
+        return {"ok": True, **modelo_sismo.status_dados()}
+
+    return _resposta_api(calcular)
+
+
+def api_importacoes(dados):
+    """GET /api/importacoes — últimas execuções do importador."""
+
+    def calcular():
+        return {"ok": True, "importacoes": modelo_sismo.importacoes_recentes()}
+
+    return _resposta_api(calcular)
