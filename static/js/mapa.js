@@ -32,6 +32,15 @@
     return String(valor);
   }
 
+  function escapar(valor) {
+    return String(valor)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function numero(valor, casas) {
     if (valor === null || valor === undefined || valor === "") {
       return "—";
@@ -381,10 +390,10 @@
     if (dados.maior) {
       el.maior.innerHTML =
         "M " + numero(dados.maior.magnitude, 2) + " — " +
-        texto(dados.maior.localidade, "local não informado") +
-        (dados.maior.uf ? " (" + dados.maior.uf + ")" : "") +
+        escapar(texto(dados.maior.localidade, "local não informado")) +
+        (dados.maior.uf ? " (" + escapar(dados.maior.uf) + ")" : "") +
         (dados.maior.data_hora
-          ? "<br><span class=\"rotulo\">" + dataCurta(dados.maior.data_hora) + "</span>"
+          ? "<br><span class=\"rotulo\">" + escapar(dataCurta(dados.maior.data_hora)) + "</span>"
           : "");
     } else {
       el.maior.textContent = "—";
@@ -521,13 +530,13 @@
         dados.eventos.forEach(function (evento) {
           var linha = document.createElement("tr");
           linha.innerHTML =
-            "<td>" + dataCurta(evento.data_hora) + "</td>" +
+            "<td>" + escapar(dataCurta(evento.data_hora)) + "</td>" +
             "<td>" + numero(evento.magnitude, 2) + "</td>" +
             "<td>" + numero(evento.profundidade_km, 1) + "</td>" +
-            "<td>" + texto(evento.uf) + "</td>" +
-            "<td>" + texto(evento.localidade) + "</td>" +
-            "<td>" + texto(evento.fonte) + "</td>" +
-            '<td><button type="button" class="link-ficha" data-id="' + evento.id + '">Ficha</button></td>';
+            "<td>" + escapar(texto(evento.uf)) + "</td>" +
+            "<td>" + escapar(texto(evento.localidade)) + "</td>" +
+            "<td>" + escapar(texto(evento.fonte)) + "</td>" +
+            '<td><button type="button" class="link-ficha" data-id="' + Number(evento.id) + '">Ficha</button></td>';
           corpo.appendChild(linha);
         });
         corpo.querySelectorAll(".link-ficha").forEach(function (botao) {
@@ -566,7 +575,7 @@
         ];
         el.fichaDados.innerHTML = campos
           .map(function (par) {
-            return "<dt>" + par[0] + "</dt><dd>" + texto(par[1]) + "</dd>";
+            return "<dt>" + escapar(par[0]) + "</dt><dd>" + escapar(texto(par[1])) + "</dd>";
           })
           .join("");
         el.ficha.hidden = false;
