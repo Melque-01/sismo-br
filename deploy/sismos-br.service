@@ -1,0 +1,20 @@
+[Unit]
+Description=Sismos BR - mapa de densidade de epicentros
+After=network-online.target postgresql.service
+Wants=network-online.target postgresql.service
+
+[Service]
+Type=simple
+User=melque
+Group=melque
+WorkingDirectory=/opt/sismos-br
+EnvironmentFile=/opt/sismos-br/.env
+ExecStart=/opt/sismos-br/.venv/bin/python app.py
+Restart=on-failure
+RestartSec=3
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

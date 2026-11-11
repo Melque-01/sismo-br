@@ -1,0 +1,6 @@
+# Normaliza fim de linha: scripts e units do Linux precisam de LF.
+* text=auto
+*.sh text eol=lf
+*.service text eol=lf
+*.timer text eol=lf
+*.py text eol=lf
