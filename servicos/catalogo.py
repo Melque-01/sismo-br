@@ -10,12 +10,16 @@ Evento normalizado (mesmas chaves para todas as fontes):
     magnitude, tipo_magnitude, categoria, uf, localidade, autor
 """
 
+import csv
 import hashlib
 import re
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
+import config
+
 FONTE_SISBRA = "SISBRA"
+FONTE_FDSN = "FDSN"
 
 # Horário oficial do Brasil (UTC-3), usado quando a hora do SISBRA traz "L".
 FUSO_LOCAL = timezone(timedelta(hours=-3))
@@ -29,6 +33,12 @@ _HORA_PARTES = re.compile(r"^(\d{2})(\d{2})?(\d{2})?(?:\.(\d+))?(L?)$")
 
 # Número com ponto decimal: usado para achar latitude/longitude fora da coluna.
 _COORDENADA = re.compile(r"-?\d{1,3}\.\d+")
+
+# Sufixo "/UF" no fim do nome do local do evento FDSN.
+_UF_NO_NOME = re.compile(r"/([A-Za-z]{2})\s*$")
+
+# Tipo de evento do FDSN que entra no catálogo (os demais são explosões etc.).
+_EVENTO_FDSN = "earthquake"
 
 
 def evento_id_sisbra(
@@ -320,4 +330,96 @@ def ler_sisbra(texto: str) -> List[Dict[str, object]]:
         evento = _ler_linha_sisbra(linha)
         if evento is not None:
             eventos.append(evento)
+    return eventos
+
+
+def _colunas_fdsn(cabecalho: List[str]) -> Dict[str, int]:
+    """Índice de cada coluna a partir da linha de cabeçalho do serviço FDSN."""
+    nomes = [nome.strip().lstrip("#").strip() for nome in cabecalho]
+    return {nome: indice for indice, nome in enumerate(nomes)}
+
+
+def _campo_fdsn(linha: List[str], colunas: Dict[str, int], nome: str) -> str:
+    """Valor de uma coluna, tolerando linhas curtas e colunas ausentes."""
+    indice = colunas.get(nome)
+    if indice is None or indice >= len(linha):
+        return ""
+    return linha[indice].strip()
+
+
+def _data_hora_fdsn(texto: str) -> Optional[datetime]:
+    """Instante do evento em UTC; o serviço devolve a hora sem offset."""
+    if not texto:
+        return None
+    try:
+        instante = datetime.fromisoformat(texto)
+    except ValueError:
+        return None
+    if instante.tzinfo is None:
+        instante = instante.replace(tzinfo=timezone.utc)
+    return instante.astimezone(timezone.utc)
+
+
+def _uf_fdsn(nome_local: str) -> Optional[str]:
+    """Sigla da UF quando o nome do local termina em `/UF` válida."""
+    achado = _UF_NO_NOME.search(nome_local)
+    if not achado:
+        return None
+    sigla = achado.group(1).upper()
+    return sigla if sigla in config.UFS else None
+
+
+def ler_fdsn(texto: str) -> List[Dict[str, object]]:
+    """Lê a resposta text do serviço FDSN e devolve os eventos normalizados.
+
+    O serviço devolve eventos do mundo inteiro dentro do recorte pedido; o
+    filtro geográfico do Brasil é feito depois, no banco. Aqui só descartamos
+    linhas sem coordenada/data e eventos que não são terremotos.
+    """
+    linhas = [linha for linha in texto.splitlines() if linha.strip()]
+    if not linhas:
+        return []
+
+    leitor = csv.reader(linhas, delimiter="|")
+    colunas = _colunas_fdsn(next(leitor))
+    if "EventID" not in colunas or "Time" not in colunas:
+        return []
+
+    eventos = []
+    for linha in leitor:
+        if _campo_fdsn(linha, colunas, "EventType") != _EVENTO_FDSN:
+            continue
+
+        evento_id = _campo_fdsn(linha, colunas, "EventID")
+        lat = _float_ou_none(_campo_fdsn(linha, colunas, "Latitude"))
+        lon = _float_ou_none(_campo_fdsn(linha, colunas, "Longitude"))
+        data_hora = _data_hora_fdsn(_campo_fdsn(linha, colunas, "Time"))
+        if not evento_id or lat is None or lon is None or data_hora is None:
+            continue
+
+        profundidade = _float_ou_none(_campo_fdsn(linha, colunas, "Depth/km"))
+        if profundidade == 0.0:
+            profundidade = None
+
+        localidade = _campo_fdsn(linha, colunas, "EventLocationName") or None
+
+        eventos.append(
+            {
+                "fonte": FONTE_FDSN,
+                "evento_id": evento_id,
+                "data_hora": data_hora,
+                "ano": data_hora.year,
+                "lat": lat,
+                "lon": lon,
+                "profundidade_km": profundidade,
+                "magnitude": _float_ou_none(
+                    _campo_fdsn(linha, colunas, "Magnitude")
+                ),
+                "tipo_magnitude": _campo_fdsn(linha, colunas, "MagType") or None,
+                "categoria": None,
+                "uf": _uf_fdsn(localidade or ""),
+                "localidade": localidade,
+                "autor": _campo_fdsn(linha, colunas, "Author") or None,
+            }
+        )
     return eventos
