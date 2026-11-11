@@ -167,8 +167,9 @@ def _data_iso(valor):
 def _evento_linha(linha: Dict[str, object]) -> Dict[str, object]:
     """Normaliza uma linha da tabela para resposta da API."""
     linha = dict(linha)
-    if "data_hora" in linha:
-        linha["data_hora"] = _data_iso(linha["data_hora"])
+    for chave in ("data_hora", "criado_em"):
+        if chave in linha:
+            linha[chave] = _data_iso(linha[chave])
     if "lat" in linha:
         linha["lat"] = float(linha["lat"])
     if "lon" in linha:

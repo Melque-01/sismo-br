@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS sismos (
     fonte            TEXT NOT NULL CHECK (fonte IN ('SISBRA','FDSN')),
     evento_id        TEXT NOT NULL,               -- FDSN EventID | hash deterministico SISBRA
     data_hora        TIMESTAMPTZ,                 -- NULL quando a hora e desconhecida
-    ano              SMALLINT NOT NULL,           -- sempre presente; base do filtro temporal
+    ano              SMALLINT NOT NULL,           -- sempre presente, base do filtro temporal
     geom             GEOMETRY(Point, 4326) NOT NULL,
     profundidade_km  REAL CHECK (profundidade_km >= 0),
     magnitude        REAL,

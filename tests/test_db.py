@@ -4,6 +4,32 @@ from unittest import skipUnless
 
 BANCO_OK = os.getenv("SISMOS_TESTAR_DB") == "1"
 
+
+class TestSchemaEmComandos(unittest.TestCase):
+    def test_ignora_ponto_e_virgula_em_comentario(self):
+        from db.database import _comandos
+
+        script = (
+            "CREATE TABLE a (x INT);\n"
+            "-- comentario; com ponto e virgula\n"
+            "CREATE INDEX i ON a (x);\n"
+        )
+        comandos = _comandos(script)
+        self.assertEqual(len(comandos), 2)
+        self.assertTrue(comandos[1].startswith("CREATE INDEX"))
+
+    def test_schema_real_gera_apenas_comandos_uteis(self):
+        from db.database import CAMINHO_SCHEMA, _comandos
+
+        with open(CAMINHO_SCHEMA, encoding="utf-8") as arquivo:
+            comandos = _comandos(arquivo.read())
+        self.assertTrue(any("CREATE TABLE IF NOT EXISTS sismos" in c for c in comandos))
+        self.assertGreaterEqual(len(comandos), 10)
+        for comando in comandos:
+            self.assertIn(
+                comando.split()[0], {"CREATE", "COMMENT", "ALTER", "GRANT"}
+            )
+
 EVENTO = {
     "fonte": "FDSN",
     "evento_id": "teste-1",
@@ -23,6 +49,15 @@ EVENTO = {
 
 @skipUnless(BANCO_OK, "defina SISMOS_TESTAR_DB=1 com PostGIS disponivel")
 class TestBanco(unittest.TestCase):
+    def tearDown(self):
+        """Remove o que o teste gravou: o banco é o mesmo da aplicação."""
+        from db import database
+
+        database.executar(
+            "DELETE FROM sismos WHERE evento_id LIKE %s", ("teste-%",)
+        )
+        database.executar("DELETE FROM importacoes WHERE arquivo = 'teste.dat'")
+
     def test_upsert_idempotente(self):
         from db import database
         from modelo.sismo import upsert_lote

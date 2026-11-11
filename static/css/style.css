@@ -200,6 +200,11 @@ button.secundario {
   background: #0d1117;
 }
 
+/* OSM é claro; o filtro deixa o mapa escuro sem depender de tile pago. */
+.mapa-area .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.72) contrast(1.05) saturate(0.7);
+}
+
 .legenda {
   position: absolute;
   left: 14px;

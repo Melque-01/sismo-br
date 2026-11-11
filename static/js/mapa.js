@@ -181,15 +181,11 @@
       worldCopyJump: true,
     });
 
-    L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-      {
-        subdomains: "abcd",
-        maxZoom: 19,
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      }
-    ).addTo(estado.mapa);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(estado.mapa);
 
     L.control.scale({ imperial: false }).addTo(estado.mapa);
   }
@@ -269,17 +265,42 @@
       return;
     }
     var linhas = [];
-    var corteAnterior = 0;
+    if (estado.metrica === "normalizada") {
+      var anterior = 0;
+      cortes.forEach(function (corte, indice) {
+        linhas.push(
+          '<div class="legenda-linha"><span class="legenda-cor" style="background:' +
+            CORES[indice] +
+            '"></span><span>' +
+            (indice === 0
+              ? "até " + numero(corte, 3)
+              : numero(anterior, 3) + " – " + numero(corte, 3)) +
+            " /mil km²</span></div>"
+        );
+        anterior = corte;
+      });
+      linhas.push(
+        '<div class="legenda-linha"><span class="legenda-cor" style="background:' +
+          CORES[Math.min(cortes.length, CORES.length - 1)] +
+          '"></span><span>acima de ' +
+          numero(anterior, 3) +
+          " /mil km²</span></div>"
+      );
+      el.legenda.innerHTML = "<h3>Densidade</h3>" + linhas.join("");
+      return;
+    }
+
+    var corteAnterior = 1;
     cortes.forEach(function (corte, indice) {
+      var faixa = corteAnterior === corte
+        ? String(corte)
+        : corteAnterior + " – " + corte;
       linhas.push(
         '<div class="legenda-linha"><span class="legenda-cor" style="background:' +
           CORES[indice] +
           '"></span><span>' +
-          corteAnterior +
-          " – " +
-          corte +
-          (estado.metrica === "normalizada" ? " /mil km²" : " eventos") +
-          "</span></div>"
+          faixa +
+          " evento(s)</span></div>"
       );
       corteAnterior = corte + 1;
     });
@@ -288,9 +309,7 @@
         CORES[Math.min(cortes.length, CORES.length - 1)] +
         '"></span><span>' +
         corteAnterior +
-        " ou mais" +
-        (estado.metrica === "normalizada" ? " /mil km²" : " eventos") +
-        "</span></div>"
+        " ou mais evento(s)</span></div>"
     );
     el.legenda.innerHTML = "<h3>Densidade</h3>" + linhas.join("");
   }
@@ -364,7 +383,9 @@
         "M " + numero(dados.maior.magnitude, 2) + " — " +
         texto(dados.maior.localidade, "local não informado") +
         (dados.maior.uf ? " (" + dados.maior.uf + ")" : "") +
-        "<br><span class=\"rotulo\">" + dataCurta(dados.maior.data_hora) + "</span>";
+        (dados.maior.data_hora
+          ? "<br><span class=\"rotulo\">" + dataCurta(dados.maior.data_hora) + "</span>"
+          : "");
     } else {
       el.maior.textContent = "—";
     }

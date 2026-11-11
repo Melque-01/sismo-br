@@ -70,12 +70,27 @@ def disponivel():
         return False
 
 
+def _comandos(script):
+    """Divide o schema em comandos, ignorando comentários de linha.
+
+    O `--` pode conter ponto e vírgula; sem remover o comentário antes de
+    dividir, o comando sairia cortado no meio.
+    """
+    linhas = []
+    for linha in script.splitlines():
+        corte = linha.find("--")
+        if corte >= 0:
+            linha = linha[:corte]
+        linhas.append(linha)
+    return [comando.strip() for comando in "\n".join(linhas).split(";") if comando.strip()]
+
+
 def criar_tabelas():
     """Aplica `db/schema.sql` (idempotente)."""
     with open(CAMINHO_SCHEMA, encoding="utf-8") as arquivo:
         script = arquivo.read()
 
-    comandos = [c.strip() for c in script.split(";") if c.strip()]
+    comandos = _comandos(script)
     with closing(conectar()) as conexao, conexao.cursor() as cursor:
         for comando in comandos:
             cursor.execute(comando)
