@@ -151,6 +151,9 @@ Para conferir, iniciar serviços e atualizar dados, veja
 Detalhes em [docs/SERVIDOR_SSH.md](docs/SERVIDOR_SSH.md),
 [docs/DADOS.md](docs/DADOS.md) e [docs/DOCKER.md](docs/DOCKER.md).
 
+Guia completo de construção (11 páginas, com arquitetura, Cloudflare Tunnel,
+deploy e checklist): [docs/Guia_Sismos_BR.pdf](docs/Guia_Sismos_BR.pdf).
+
 ## Decisões e limitações
 
 - **Só território brasileiro**: filtro pela malha do IBGE (27 UFs). Eventos
