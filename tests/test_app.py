@@ -200,6 +200,23 @@ class TestStaticRange(unittest.TestCase):
         cabecalho, _ = self._resposta("bytes=0-1,4-5")
         self.assertIn("416", cabecalho.splitlines()[0])
 
+    def test_cliente_desconectado_nao_propaga_erro(self):
+        class WfileQuebrado(io.BytesIO):
+            def __init__(self):
+                super().__init__()
+                self.chamadas = 0
+
+            def write(self, dados):
+                self.chamadas += 1
+                if self.chamadas > 1:
+                    raise ConnectionResetError("cliente saiu")
+                return super().write(dados)
+
+        manipulador = _handler({}, "/static/videos/sismos-br-mobile.mp4")
+        manipulador.wfile = WfileQuebrado()
+        manipulador._despachar("GET")
+        self.assertGreaterEqual(manipulador.wfile.chamadas, 2)
+
 
 if __name__ == "__main__":
     unittest.main()

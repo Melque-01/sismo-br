@@ -307,7 +307,10 @@ class Manipulador(BaseHTTPRequestHandler):
         self.send_header("content-length", str(len(corpo)))
         self.end_headers()
         if corpo and getattr(self, "command", "GET") != "HEAD":
-            self.wfile.write(corpo)
+            try:
+                self.wfile.write(corpo)
+            except ConnectionError:
+                pass
 
     def _enviar_arquivo(self, status, cabecalhos, arquivo, inicio, tamanho):
         """Envia um trecho de arquivo em blocos, sem carregar tudo na memória."""
@@ -318,14 +321,17 @@ class Manipulador(BaseHTTPRequestHandler):
             return
 
         restante = tamanho
-        with open(arquivo, "rb") as aberto:
-            aberto.seek(inicio)
-            while restante > 0:
-                bloco = aberto.read(min(65536, restante))
-                if not bloco:
-                    break
-                self.wfile.write(bloco)
-                restante -= len(bloco)
+        try:
+            with open(arquivo, "rb") as aberto:
+                aberto.seek(inicio)
+                while restante > 0:
+                    bloco = aberto.read(min(65536, restante))
+                    if not bloco:
+                        break
+                    self.wfile.write(bloco)
+                    restante -= len(bloco)
+        except ConnectionError:
+            return
 
     def log_message(self, formato, *args):
         print("[{}] {}".format(self.log_date_time_string(), formato % args))
