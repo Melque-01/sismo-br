@@ -80,6 +80,18 @@ PGPASSWORD="$DB_PASSWORD" pg_dump -h 127.0.0.1 -U sismos_br -Fc sismos_br \
   > "$HOME/sismos_br_$(date +%F).dump"
 ```
 
+## Vídeos da página "Saiba mais"
+
+Os MP4s não entram no Git. Depois de gerar ou atualizar:
+
+```bash
+scp -P 2222 static/videos/*.mp4 static/videos/*.vtt static/videos/*.jpg \
+  melque@<host-do-servidor>:/home/melque/sismos-br/static/videos/
+```
+
+O app serve `/static/videos/...` com suporte a `Range`, então o player
+consegue buscar e avançar sem baixar o arquivo inteiro.
+
 ## Limitação importante
 
 O host não tem systemd: **se o container/host reiniciar, PostgreSQL, app e túnel

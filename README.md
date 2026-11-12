@@ -13,6 +13,8 @@ restrições do container.
 ## O que o site faz
 
 - **Login e cadastro**: o usuário cria a própria conta (e-mail e senha) e entra na hora; senha guardada com PBKDF2 e sessão em cookie assinado.
+- Página pública `/saiba-mais` com introdução e vídeo explicativo do sistema.
+- Player escolhe sozinho o vídeo 1080×1920 no celular e 1920×1080 no computador.
 - Grade de densidade com célula de 0,25°, 0,5°, 1° ou 2°.
 - Duas métricas: contagem de eventos e eventos por 1.000 km² (normalizada).
 - Filtros por período, magnitude, profundidade, fonte, UF e categoria SISBRA.
@@ -107,6 +109,22 @@ python app.py
 
 O app sobe mesmo sem banco (a página abre e a API responde 503 com mensagem em
 português). Para carregar os dados é preciso um PostGIS acessível.
+
+## Página "Saiba mais" e vídeos
+
+A rota pública `/saiba-mais` apresenta o projeto e o vídeo explicativo. O
+player escolhe automaticamente:
+
+- `static/videos/sismos-br-mobile.mp4` — 1080×1920, celular;
+- `static/videos/sismos-br-desktop.mp4` — 1920×1080, computador.
+
+Os MP4s não entram no Git porque são grandes. Poster, legendas e player ficam
+versionados. Para publicar no servidor:
+
+```bash
+scp -P 2222 static/videos/*.mp4 static/videos/*.vtt static/videos/*.jpg \
+  melque@<host-do-servidor>:/home/melque/sismos-br/static/videos/
+```
 
 ## Importar os catálogos
 
