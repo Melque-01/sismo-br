@@ -49,6 +49,11 @@ def run(comando: str, senha_sudo: str = None) -> int:
             entrada, saida, erro = cliente.exec_command(comando, get_pty=True)
             entrada.write(senha_sudo + "\n")
             entrada.flush()
+        elif senha_sudo is not None:
+            # Senha vazia: usa o sudo sem senha (NOPASSWD) da chave.
+            entrada, saida, erro = cliente.exec_command(
+                "sudo -n bash -lc {}".format(_aspas(comando))
+            )
         else:
             entrada, saida, erro = cliente.exec_command(
                 "bash -lc {}".format(_aspas(comando))

@@ -126,15 +126,18 @@ SISMOS_TESTAR_DB=1 python -m unittest discover -s tests -v
 
 ## Estado atual da publicação
 
-- VM Ubuntu Server 26.04 no VirtualBox, rede NAT (SSH `127.0.0.1:2222`), usuário `melque`.
-- Serviço `sismos-br` em `http://127.0.0.1:8080` (a porta 80 já é usada pelo
-  projeto Geo Buss).
-- Túnel rápido: `<tunel-efemero>`
-  (URL temporária - muda se o serviço/túnel reiniciar).
+- Servidor SSH `melque@<host-do-servidor>:2222` (Ubuntu 24.04 em container, sem
+  systemd/Docker).
+- PostgreSQL 16 + PostGIS 3.4 + aplicação em `/home/melque/sismos-br` (porta 8080).
+- Túnel público: `<tunel-efemero>`
+  (URL temporária — muda se o `cloudflared` reiniciar).
 - Base: **5.141 eventos** no recorte do Brasil (5.044 SISBRA + 97 FDSN).
+- Stack Docker (`Dockerfile` + `docker-compose.yml`) pronta e testada para uma
+  VM de verdade (Google Cloud/Oracle).
 
-Detalhes em [docs/DADOS.md](docs/DADOS.md),
-[docs/DEPLOY_VM.md](docs/DEPLOY_VM.md) e
+Detalhes em [docs/SERVIDOR_SSH.md](docs/SERVIDOR_SSH.md),
+[docs/DADOS.md](docs/DADOS.md), [docs/DEPLOY_VM.md](docs/DEPLOY_VM.md),
+[docs/DOCKER.md](docs/DOCKER.md) e
 [docs/AMBIENTE_VM.md](docs/AMBIENTE_VM.md).
 
 ## Decisões e limitações
