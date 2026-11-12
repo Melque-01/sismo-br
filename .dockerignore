@@ -1,0 +1,15 @@
+.git
+.superpowers
+.venv
+__pycache__
+*.pyc
+*.log
+.env
+.env.vm
+.env.docker
+dados/brutos
+docs
+tests
+.playwright-mcp
+tools
+deploy

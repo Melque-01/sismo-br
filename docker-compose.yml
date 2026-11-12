@@ -1,0 +1,45 @@
+name: sismos-br
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: sismos_br
+      POSTGRES_USER: sismos_br
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD no arquivo .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sismos_br -d sismos_br"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  app:
+    build: .
+    image: sismos-br-app:latest
+    environment:
+      HOST: 0.0.0.0
+      PORTA: "8080"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: sismos_br
+      DB_USER: sismos_br
+      DB_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD no arquivo .env}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate --protocol http2 --url http://app:8080
+    depends_on:
+      - app
+    restart: unless-stopped
+
+volumes:
+  pgdata:
