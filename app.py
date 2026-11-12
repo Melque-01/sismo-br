@@ -10,6 +10,7 @@ Execução:
     python app.py
 """
 
+import ipaddress
 import json
 import mimetypes
 import os
@@ -34,6 +35,32 @@ ROTAS_PUBLICAS = {
     ("POST", "/registrar"),
     ("GET", "/api/status"),
 }
+
+# Proxies confiáveis (nginx no host, cloudflared no container). Só eles
+# podem declarar o IP do cliente.
+PROXIES_CONFIAVEIS = {
+    ip.strip()
+    for ip in os.getenv("PROXIES_CONFIAVEIS", "127.0.0.1,::1,172.19.0.1").split(",")
+    if ip.strip()
+}
+
+
+def ip_cliente(peer, cabecalhos):
+    """IP real do cliente; cabeçalho de proxy só vale se o peer for confiável."""
+    if peer not in PROXIES_CONFIAVEIS:
+        return peer
+    candidatos = [
+        (cabecalhos.get("x-real-ip") or "").strip(),
+        (cabecalhos.get("x-forwarded-for") or "").split(",")[0].strip(),
+    ]
+    for candidato in candidatos:
+        if not candidato:
+            continue
+        try:
+            return str(ipaddress.ip_address(candidato))
+        except ValueError:
+            continue
+    return peer
 
 
 class Manipulador(BaseHTTPRequestHandler):
@@ -73,7 +100,19 @@ class Manipulador(BaseHTTPRequestHandler):
         dados["_proto"] = (
             (cabecalhos.get("x-forwarded-proto") or "http").split(",")[0].strip()
         )
-        dados["_ip"] = self.client_address[0]
+        dados["_ip"] = ip_cliente(self.client_address[0], cabecalhos)
+
+        # Segurança de transporte: só o proxy pode dizer o protocolo externo.
+        proto_cabecalho = (cabecalhos.get("x-forwarded-proto") or "").strip().lower()
+        self._https = proto_cabecalho == "https"
+        self._privado = caminho.startswith("/api/") or caminho in (
+            "/login",
+            "/registrar",
+        )
+        if proto_cabecalho == "http":
+            host = cabecalhos.get("host") or "localhost"
+            alvo = "https://{}{}".format(host, self.path)
+            return self._enviar(*respostas.redirecionar(alvo, status=301))
 
         funcao = ROTAS.get((metodo, caminho))
         if funcao is None:
@@ -100,7 +139,7 @@ class Manipulador(BaseHTTPRequestHandler):
         except Exception as erro:  # noqa: BLE001 - falha inesperada vira 500
             traceback.print_exc()
             return self._enviar(
-                *respostas.json_resposta({"erro": "erro interno: {}".format(erro)}, 500)
+                *respostas.json_resposta({"erro": "erro interno"}, 500)
             )
 
         self._enviar(status, cabecalhos_resposta, corpo)
@@ -167,6 +206,19 @@ class Manipulador(BaseHTTPRequestHandler):
 
     def _enviar(self, status, cabecalhos, corpo):
         self.send_response(status)
+        cabecalhos = dict(cabecalhos)
+        cabecalhos.setdefault("x-content-type-options", "nosniff")
+        cabecalhos.setdefault("x-frame-options", "DENY")
+        cabecalhos.setdefault("referrer-policy", "no-referrer")
+        cabecalhos.setdefault(
+            "permissions-policy", "geolocation=(), camera=(), microphone=()"
+        )
+        if getattr(self, "_https", False):
+            cabecalhos.setdefault(
+                "strict-transport-security", "max-age=31536000; includeSubDomains"
+            )
+        if getattr(self, "_privado", False):
+            cabecalhos.setdefault("cache-control", "no-store")
         for nome, valor in cabecalhos.items():
             self.send_header(nome, valor)
         self.send_header("content-length", str(len(corpo)))
