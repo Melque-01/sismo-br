@@ -205,11 +205,16 @@
       worldCopyJump: true,
     });
 
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(estado.mapa);
+    L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/" +
+        "World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+      {
+        maxZoom: 16,
+        attribution:
+          'Tiles &copy; <a href="https://www.esri.com/">Esri</a> — ' +
+          "Esri, DeLorme, NAVTEQ",
+      }
+    ).addTo(estado.mapa);
 
     L.control.scale({ imperial: false }).addTo(estado.mapa);
   }

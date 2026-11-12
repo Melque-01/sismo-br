@@ -289,7 +289,9 @@ class Manipulador(BaseHTTPRequestHandler):
         cabecalhos = dict(cabecalhos)
         cabecalhos.setdefault("x-content-type-options", "nosniff")
         cabecalhos.setdefault("x-frame-options", "DENY")
-        cabecalhos.setdefault("referrer-policy", "no-referrer")
+        cabecalhos.setdefault(
+            "referrer-policy", "strict-origin-when-cross-origin"
+        )
         cabecalhos.setdefault(
             "permissions-policy", "geolocation=(), camera=(), microphone=()"
         )

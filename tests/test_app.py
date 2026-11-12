@@ -83,7 +83,7 @@ class TestSegurancaHttp(unittest.TestCase):
         resposta = self._resposta({})
         self.assertIn("x-content-type-options: nosniff", resposta)
         self.assertIn("x-frame-options: deny", resposta)
-        self.assertIn("referrer-policy: no-referrer", resposta)
+        self.assertIn("referrer-policy: strict-origin-when-cross-origin", resposta)
 
     def test_api_envia_no_store(self):
         resposta = self._resposta({})
