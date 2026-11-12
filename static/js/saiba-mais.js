@@ -21,10 +21,7 @@
     }
   }
 
-  function aplicar() {
-    var mobile = usarMobile();
-    var fonte = mobile ? video.dataset.srcMobile : video.dataset.srcDesktop;
-    var capa = mobile ? video.dataset.posterMobile : video.dataset.posterDesktop;
+  function trocar(fonte, capa, mobile) {
     var tempo = video.currentTime || 0;
     var tocando = !video.paused && !video.ended;
 
@@ -52,13 +49,18 @@
     video.addEventListener("loadedmetadata", restaurar);
   }
 
+  function aplicar() {
+    var mobile = usarMobile();
+    trocar(
+      mobile ? video.dataset.srcMobile : video.dataset.srcDesktop,
+      mobile ? video.dataset.posterMobile : video.dataset.posterDesktop,
+      mobile
+    );
+  }
+
   video.addEventListener("error", function () {
     if (atual !== video.dataset.srcMobile) return;
-    atual = video.dataset.srcDesktop;
-    if (video.dataset.posterDesktop) video.poster = video.dataset.posterDesktop;
-    if (baixar) baixar.href = atual;
-    video.src = atual;
-    video.load();
+    trocar(video.dataset.srcDesktop, video.dataset.posterDesktop, false);
   });
 
   aplicar();
