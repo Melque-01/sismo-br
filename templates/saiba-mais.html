@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{titulo}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="pagina-saiba-mais">
+  <header class="topo topo-saiba">
+    <a class="marca marca-link" href="/" aria-label="Ir para o mapa">
+      <span class="marca-simbolo" aria-hidden="true">◉</span>
+      <div>
+        <h1>Sismos BR</h1>
+        <p>Mapa de densidade de epicentros</p>
+      </div>
+    </a>
+    <a class="botao-voltar" href="/">← Voltar ao mapa</a>
+  </header>
+
+  <main class="saiba-conteudo">
+    <section class="saiba-hero" aria-labelledby="sobre-titulo">
+      <p class="sobre-rotulo">Sobre o projeto</p>
+      <h2 id="sobre-titulo">O que é o Sismos BR</h2>
+      <p>
+        O Sismos BR é um mapa interativo que mostra onde os terremotos
+        registrados no Brasil se concentram. Ele reúne o catálogo histórico do
+        SISBRA/RSBR, de 1690 a 2023, com os eventos recentes do serviço FDSN do
+        Moho/IAG-USP.
+      </p>
+      <p>
+        Os dados passam por um parser, entram num banco PostgreSQL com PostGIS
+        e viram uma grade de densidade. Cada célula do mapa guarda quantos
+        sismos aconteceram ali, permitindo comparar regiões e períodos.
+      </p>
+      <a class="botao-saiba-mais" href="#video">
+        <span aria-hidden="true">▶</span> Assistir ao vídeo
+      </a>
+    </section>
+
+    <section class="saiba-recursos" aria-labelledby="recursos-titulo">
+      <h2 id="recursos-titulo">O que você encontra no mapa</h2>
+      <div class="recursos-grade">
+        <article class="recurso">
+          <span class="recurso-numero" aria-hidden="true">01</span>
+          <h3>Mapa de densidade</h3>
+          <p>Grade de 0,25° a 2° com duas métricas: contagem e eventos por 1.000 km².</p>
+        </article>
+        <article class="recurso">
+          <span class="recurso-numero" aria-hidden="true">02</span>
+          <h3>Filtros combináveis</h3>
+          <p>Período, magnitude, profundidade, fonte, UF e categoria SISBRA.</p>
+        </article>
+        <article class="recurso">
+          <span class="recurso-numero" aria-hidden="true">03</span>
+          <h3>Ficha do evento</h3>
+          <p>Clique numa célula para listar os sismos e abrir os dados de cada um.</p>
+        </article>
+        <article class="recurso">
+          <span class="recurso-numero" aria-hidden="true">04</span>
+          <h3>Estatísticas</h3>
+          <p>Total, maior magnitude, UFs mais ativas, série anual e histograma.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="video-area" id="video" aria-labelledby="video-titulo">
+      <div class="video-cabecalho">
+        <div>
+          <p class="sobre-rotulo">Vídeo explicativo</p>
+          <h2 id="video-titulo">Do catálogo ao navegador</h2>
+        </div>
+        <span class="video-duracao">2 min 18 s</span>
+      </div>
+
+      <div class="video-moldura" id="video-moldura">
+        <video id="video-explicativo" controls playsinline preload="metadata"
+               poster="/static/videos/sismos-br-poster.jpg"
+               data-src-desktop="/static/videos/sismos-br-desktop.mp4"
+               data-src-mobile="/static/videos/sismos-br-mobile.mp4">
+          <track kind="captions" src="/static/videos/sismos-br.vtt"
+                 srclang="pt" label="Português" default>
+        </video>
+      </div>
+
+      <p class="video-nota">
+        O vídeo tem narração em português e legendas. No celular, a versão
+        vertical é carregada automaticamente; no computador, a horizontal.
+        Se o player não carregar,
+        <a id="baixar-video" href="/static/videos/sismos-br-desktop.mp4" download>
+          baixe o vídeo aqui
+        </a>.
+      </p>
+    </section>
+  </main>
+
+  <footer class="rodape saiba-rodape">
+    <p class="rodape-nota">
+      Dados: SISBRA/CSUSP-IAG-USP, catálogo FDSN do Moho/IAG-USP e malha do IBGE.
+      Projeto acadêmico — não use para emergências.
+    </p>
+  </footer>
+
+  <script src="/static/js/saiba-mais.js"></script>
+</body>
+</html>

@@ -14,3 +14,11 @@ def index(dados):
             usuario=dados.get("_email") or "",
         ),
     )
+
+
+def saiba_mais(dados):
+    """GET /saiba-mais - apresentação pública do projeto e vídeo explicativo."""
+    return render(
+        "saiba-mais.html",
+        titulo="Sismos BR - saiba mais sobre o projeto",
+    )

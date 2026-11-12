@@ -15,6 +15,7 @@ ROTAS = {
     ("POST", "/registrar"): auth_controle.registrar,
     ("POST", "/logout"): auth_controle.logout,
     ("GET", "/"): home_controle.index,
+    ("GET", "/saiba-mais"): home_controle.saiba_mais,
     ("GET", "/api/densidade"): sismo_controle.api_densidade,
     ("GET", "/api/sismos"): sismo_controle.api_sismos,
     ("GET", "/api/celula"): sismo_controle.api_celula,

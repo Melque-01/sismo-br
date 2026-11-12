@@ -107,6 +107,17 @@ class TestSegurancaHttp(unittest.TestCase):
         self.assertNotIn(".env", resposta)
 
 
+class TestPaginaSaibaMais(unittest.TestCase):
+    def test_rota_publica_sem_login(self):
+        self.assertIn(("GET", "/saiba-mais"), app.ROTAS_PUBLICAS)
+
+    def test_despacha_sem_cookie(self):
+        manipulador = _handler({}, "/saiba-mais")
+        manipulador._despachar("GET")
+        resposta = manipulador.wfile.getvalue()
+        self.assertTrue(resposta.startswith(b"HTTP/1.1 200"), resposta[:80])
+
+
 class TestStaticRange(unittest.TestCase):
     CAMINHO = "/static/css/style.css"
 

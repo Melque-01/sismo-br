@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from controles import sismo_controle
+from controles import home_controle, sismo_controle
 from rotas.rotas import ROTAS
 
 
@@ -9,6 +9,7 @@ class TestRotas(unittest.TestCase):
     def test_rotas_declaradas(self):
         for caminho in [
             "/",
+            "/saiba-mais",
             "/login",
             "/registrar",
             "/api/densidade",
@@ -25,6 +26,15 @@ class TestRotas(unittest.TestCase):
         self.assertIn(("GET", "/registrar"), ROTAS)
         self.assertIn(("POST", "/registrar"), ROTAS)
         self.assertIn(("POST", "/logout"), ROTAS)
+
+    def test_pagina_saiba_mais_renderiza(self):
+        status, cabecalhos, corpo = home_controle.saiba_mais({})
+        self.assertEqual(status, 200)
+        self.assertIn("text/html", cabecalhos["content-type"])
+        html = corpo.decode("utf-8")
+        self.assertIn("sismos-br-mobile.mp4", html)
+        self.assertIn("sismos-br-desktop.mp4", html)
+        self.assertIn("O que é o Sismos BR", html)
 
     def test_filtro_invalido_vira_400(self):
         status, cabecalhos, corpo = sismo_controle.api_densidade({"celula": "0.3"})

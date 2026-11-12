@@ -33,6 +33,7 @@ ROTAS_PUBLICAS = {
     ("POST", "/login"),
     ("GET", "/registrar"),
     ("POST", "/registrar"),
+    ("GET", "/saiba-mais"),
     ("GET", "/api/status"),
 }
 
