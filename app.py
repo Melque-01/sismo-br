@@ -72,6 +72,9 @@ class Manipulador(BaseHTTPRequestHandler):
     def do_GET(self):
         self._despachar("GET")
 
+    def do_HEAD(self):
+        self._despachar("HEAD")
+
     def do_POST(self):
         self._despachar("POST")
 
@@ -116,12 +119,16 @@ class Manipulador(BaseHTTPRequestHandler):
             return self._enviar(*respostas.redirecionar(alvo, status=301))
 
         funcao = ROTAS.get((metodo, caminho))
+        chave_rota = (metodo, caminho)
+        if funcao is None and metodo == "HEAD":
+            chave_rota = ("GET", caminho)
+            funcao = ROTAS.get(chave_rota)
         if funcao is None:
             return self._enviar(
                 *respostas.json_resposta({"erro": "rota não encontrada"}, 404)
             )
 
-        if (metodo, caminho) not in ROTAS_PUBLICAS:
+        if chave_rota not in ROTAS_PUBLICAS:
             email = sessoes.validar_token(
                 dados["_cookies"].get(sessoes.NOME_COOKIE)
             )
@@ -217,7 +224,17 @@ class Manipulador(BaseHTTPRequestHandler):
                 *respostas.json_resposta({"erro": "acesso negado"}, 403)
             )
 
-        arquivo = os.path.join(PASTA_STATIC, relativo)
+        raiz = os.path.realpath(PASTA_STATIC)
+        arquivo = os.path.realpath(os.path.join(raiz, relativo))
+        try:
+            dentro = os.path.commonpath([raiz, arquivo]) == raiz
+        except ValueError:
+            dentro = False
+        if not dentro:
+            return self._enviar(
+                *respostas.json_resposta({"erro": "acesso negado"}, 403)
+            )
+
         if not os.path.isfile(arquivo):
             return self._enviar(
                 *respostas.json_resposta({"erro": "arquivo não encontrado"}, 404)
@@ -244,10 +261,7 @@ class Manipulador(BaseHTTPRequestHandler):
             )
         if intervalo is not None:
             inicio, fim = intervalo
-            with open(arquivo, "rb") as arquivo_aberto:
-                arquivo_aberto.seek(inicio)
-                corpo = arquivo_aberto.read(fim - inicio + 1)
-            return self._enviar(
+            return self._enviar_arquivo(
                 206,
                 {
                     "content-type": tipo,
@@ -256,19 +270,21 @@ class Manipulador(BaseHTTPRequestHandler):
                         inicio, fim, tamanho
                     ),
                 },
-                corpo,
+                arquivo,
+                inicio,
+                fim - inicio + 1,
             )
 
-        with open(arquivo, "rb") as arquivo_aberto:
-            corpo = arquivo_aberto.read()
-
-        self._enviar(
+        self._enviar_arquivo(
             200,
             {"content-type": tipo, "accept-ranges": "bytes"},
-            corpo,
+            arquivo,
+            0,
+            tamanho,
         )
 
-    def _enviar(self, status, cabecalhos, corpo):
+    def _iniciar_resposta(self, status, cabecalhos):
+        """Envia status e cabeçalhos comuns, sem content-length."""
         self.send_response(status)
         cabecalhos = dict(cabecalhos)
         cabecalhos.setdefault("x-content-type-options", "nosniff")
@@ -285,10 +301,31 @@ class Manipulador(BaseHTTPRequestHandler):
             cabecalhos.setdefault("cache-control", "no-store")
         for nome, valor in cabecalhos.items():
             self.send_header(nome, valor)
+
+    def _enviar(self, status, cabecalhos, corpo):
+        self._iniciar_resposta(status, cabecalhos)
         self.send_header("content-length", str(len(corpo)))
         self.end_headers()
-        if corpo:
+        if corpo and getattr(self, "command", "GET") != "HEAD":
             self.wfile.write(corpo)
+
+    def _enviar_arquivo(self, status, cabecalhos, arquivo, inicio, tamanho):
+        """Envia um trecho de arquivo em blocos, sem carregar tudo na memória."""
+        self._iniciar_resposta(status, cabecalhos)
+        self.send_header("content-length", str(tamanho))
+        self.end_headers()
+        if getattr(self, "command", "GET") == "HEAD" or tamanho <= 0:
+            return
+
+        restante = tamanho
+        with open(arquivo, "rb") as aberto:
+            aberto.seek(inicio)
+            while restante > 0:
+                bloco = aberto.read(min(65536, restante))
+                if not bloco:
+                    break
+                self.wfile.write(bloco)
+                restante -= len(bloco)
 
     def log_message(self, formato, *args):
         print("[{}] {}".format(self.log_date_time_string(), formato % args))

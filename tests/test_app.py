@@ -117,6 +117,30 @@ class TestPaginaSaibaMais(unittest.TestCase):
         resposta = manipulador.wfile.getvalue()
         self.assertTrue(resposta.startswith(b"HTTP/1.1 200"), resposta[:80])
 
+    def test_head_sem_cookie_nao_devolve_corpo(self):
+        manipulador = _handler({}, "/saiba-mais")
+        manipulador.command = "HEAD"
+        manipulador._despachar("HEAD")
+        cabecalho, _, corpo = manipulador.wfile.getvalue().partition(b"\r\n\r\n")
+        self.assertIn(b"200", cabecalho.splitlines()[0])
+        self.assertEqual(corpo, b"")
+
+
+class TestStaticSeguranca(unittest.TestCase):
+    def _status(self, caminho):
+        manipulador = _handler({}, caminho)
+        manipulador._despachar("GET")
+        return manipulador.wfile.getvalue().splitlines()[0]
+
+    def test_barra_invertida_codificada_nao_escapa(self):
+        self.assertIn(b"403", self._status("/static/css/..%5c..%5cREADME.md"))
+
+    def test_ponto_ponto_posix_nao_escapa(self):
+        self.assertIn(b"403", self._status("/static/css/../../README.md"))
+
+    def test_ponto_ponto_codificado_nao_escapa(self):
+        self.assertIn(b"403", self._status("/static/%2e%2e/%2e%2e/README.md"))
+
 
 class TestStaticRange(unittest.TestCase):
     CAMINHO = "/static/css/style.css"
@@ -145,6 +169,26 @@ class TestStaticRange(unittest.TestCase):
         cabecalho, corpo = self._resposta("bytes=-10")
         self.assertIn("206", cabecalho.splitlines()[0])
         self.assertEqual(len(corpo), 10)
+
+    def test_range_aberto_ate_o_fim(self):
+        cabecalho, corpo = self._resposta("bytes=0-")
+        self.assertIn("206", cabecalho.splitlines()[0])
+        self.assertIn("content-range: bytes 0-", cabecalho)
+        self.assertGreater(len(corpo), 1000)
+
+    def test_range_sufixo_maior_que_arquivo_devolve_tudo(self):
+        cabecalho, corpo = self._resposta("bytes=-999999")
+        self.assertIn("206", cabecalho.splitlines()[0])
+        self.assertGreater(len(corpo), 1000)
+
+    def test_head_com_range_nao_devolve_corpo(self):
+        manipulador = _handler({"range": "bytes=0-1023"}, self.CAMINHO)
+        manipulador.command = "HEAD"
+        manipulador._despachar("HEAD")
+        cabecalho, _, corpo = manipulador.wfile.getvalue().partition(b"\r\n\r\n")
+        self.assertIn(b"206", cabecalho.splitlines()[0])
+        self.assertIn(b"content-range: bytes 0-1023/", cabecalho)
+        self.assertEqual(corpo, b"")
 
     def test_range_fora_do_arquivo_devolve_416(self):
         cabecalho, corpo = self._resposta("bytes=999999-")
