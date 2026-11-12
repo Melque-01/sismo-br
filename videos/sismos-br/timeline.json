@@ -1,0 +1,67 @@
+{
+  "voz": "pt-BR-FranciscaNeural",
+  "pausa": 0.45,
+  "total": 133.956,
+  "cenas": [
+    {
+      "nome": "intro",
+      "inicio": 0.0,
+      "duracao": 13.416,
+      "fim": 13.416
+    },
+    {
+      "nome": "dados",
+      "inicio": 13.866,
+      "duracao": 14.856,
+      "fim": 28.722
+    },
+    {
+      "nome": "postgis",
+      "inicio": 29.172,
+      "duracao": 15.336,
+      "fim": 44.508
+    },
+    {
+      "nome": "mapa",
+      "inicio": 44.958,
+      "duracao": 15.312,
+      "fim": 60.27
+    },
+    {
+      "nome": "filtros",
+      "inicio": 60.72,
+      "duracao": 14.064,
+      "fim": 74.784
+    },
+    {
+      "nome": "painel",
+      "inicio": 75.234,
+      "duracao": 9.984,
+      "fim": 85.218
+    },
+    {
+      "nome": "login",
+      "inicio": 85.668,
+      "duracao": 11.424,
+      "fim": 97.092
+    },
+    {
+      "nome": "arquitetura",
+      "inicio": 97.542,
+      "duracao": 13.512,
+      "fim": 111.054
+    },
+    {
+      "nome": "cloudflare",
+      "inicio": 111.504,
+      "duracao": 14.304,
+      "fim": 125.808
+    },
+    {
+      "nome": "fechamento",
+      "inicio": 126.258,
+      "duracao": 7.248,
+      "fim": 133.506
+    }
+  ]
+}
