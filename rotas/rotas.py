@@ -11,6 +11,8 @@ from controles import auth_controle, home_controle, sismo_controle
 ROTAS = {
     ("GET", "/login"): auth_controle.login_form,
     ("POST", "/login"): auth_controle.login,
+    ("GET", "/registrar"): auth_controle.registrar_form,
+    ("POST", "/registrar"): auth_controle.registrar,
     ("POST", "/logout"): auth_controle.logout,
     ("GET", "/"): home_controle.index,
     ("GET", "/api/densidade"): sismo_controle.api_densidade,

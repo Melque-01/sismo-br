@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Criar conta — Sismos BR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="tela-login">
+  <main class="login-caixa" aria-labelledby="cadastro-titulo">
+    <div class="login-marca">
+      <span class="marca-simbolo" aria-hidden="true"></span>
+      <div>
+        <h1>Sismos BR</h1>
+        <p>Densidade de epicentros no Brasil</p>
+      </div>
+    </div>
+
+    <h2 id="cadastro-titulo">Criar conta</h2>
+    <p class="login-subtitulo">Leva menos de um minuto. O acesso é liberado na hora.</p>
+
+    <form method="post" action="/registrar" class="login-form">
+      <div class="campo-login">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" name="email" value="{{email}}"
+               autocomplete="username" inputmode="email" required autofocus
+               placeholder="voce@exemplo.com">
+      </div>
+
+      <div class="campo-login">
+        <label for="senha">Senha</label>
+        <div class="senha-campo">
+          <input type="password" id="senha" name="senha" minlength="8"
+                 autocomplete="new-password" required placeholder="Mínimo 8 caracteres">
+          <button type="button" class="link-senha" id="mostrar-senha"
+                  aria-controls="senha" aria-pressed="false">Mostrar</button>
+        </div>
+      </div>
+
+      <div class="campo-login">
+        <label for="confirmar">Confirmar senha</label>
+        <input type="password" id="confirmar" name="confirmar" minlength="8"
+               autocomplete="new-password" required placeholder="Repita a senha">
+      </div>
+
+      <p class="login-erro" role="alert">{{erro}}</p>
+
+      <button type="submit" class="botao-entrar">Criar conta</button>
+    </form>
+
+    <p class="login-nota">
+      Já tem conta? <a class="login-link" href="/login">Entrar</a>
+    </p>
+  </main>
+
+  <script>
+    (function () {
+      var botao = document.getElementById("mostrar-senha");
+      var campo = document.getElementById("senha");
+      botao.addEventListener("click", function () {
+        var visivel = campo.type === "text";
+        campo.type = visivel ? "password" : "text";
+        botao.textContent = visivel ? "Mostrar" : "Ocultar";
+        botao.setAttribute("aria-pressed", String(!visivel));
+      });
+    })();
+  </script>
+</body>
+</html>

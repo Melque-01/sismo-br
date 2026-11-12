@@ -10,6 +10,7 @@ class TestRotas(unittest.TestCase):
         for caminho in [
             "/",
             "/login",
+            "/registrar",
             "/api/densidade",
             "/api/sismos",
             "/api/celula",
@@ -21,6 +22,8 @@ class TestRotas(unittest.TestCase):
         ]:
             self.assertIn(("GET", caminho), ROTAS)
         self.assertIn(("POST", "/login"), ROTAS)
+        self.assertIn(("GET", "/registrar"), ROTAS)
+        self.assertIn(("POST", "/registrar"), ROTAS)
         self.assertIn(("POST", "/logout"), ROTAS)
 
     def test_filtro_invalido_vira_400(self):

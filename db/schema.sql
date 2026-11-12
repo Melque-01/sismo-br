@@ -47,6 +47,14 @@ CREATE TABLE IF NOT EXISTS importacoes (
 
 CREATE INDEX IF NOT EXISTS importacoes_iniciado_em_idx ON importacoes (iniciado_em DESC);
 
+CREATE TABLE IF NOT EXISTS usuarios (
+    id          BIGSERIAL PRIMARY KEY,
+    email       TEXT NOT NULL UNIQUE,
+    senha_hash  TEXT NOT NULL,
+    criado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+COMMENT ON TABLE usuarios IS 'Contas de acesso ao mapa. Senha em PBKDF2-HMAC-SHA256 com salt por usuário.';
 COMMENT ON TABLE sismos IS 'Epicentros normalizados do SISBRA e do FDSN (somente territorio brasileiro).';
 COMMENT ON COLUMN sismos.evento_id IS 'FDSN EventID ou md5(ano|mmdd|hora|lat|lon|mag) no SISBRA.';
 COMMENT ON TABLE estados IS 'Malha das 27 UFs do IBGE, usada para filtrar eventos e calcular densidade.';

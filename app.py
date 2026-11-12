@@ -30,6 +30,8 @@ PASTA_STATIC = os.path.join(RAIZ, "static")
 ROTAS_PUBLICAS = {
     ("GET", "/login"),
     ("POST", "/login"),
+    ("GET", "/registrar"),
+    ("POST", "/registrar"),
     ("GET", "/api/status"),
 }
 
@@ -193,6 +195,12 @@ def main():
 
         criar_tabelas()
         print("Banco: schema aplicado.")
+        from modelo import usuario
+
+        if usuario.garantir_admin_inicial(
+            config.LOGIN_EMAIL, config.LOGIN_SENHA
+        ):
+            print("Usuário inicial criado a partir do .env.")
     except Exception as erro:  # noqa: BLE001 - app sobe mesmo sem banco
         print(
             "AVISO: sem banco de dados ({}). O mapa abre, mas as consultas "

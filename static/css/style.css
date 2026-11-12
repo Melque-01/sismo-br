@@ -666,3 +666,13 @@ tbody tr:hover {
     padding: 22px;
   }
 }
+
+.login-link {
+  color: var(--destaque-2);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-link:hover {
+  text-decoration: underline;
+}

@@ -35,15 +35,19 @@ navegador → Cloudflare Tunnel (HTTP/2) → cloudflared
          → http://127.0.0.1:8080 → app.py → PostgreSQL/PostGIS local
 ```
 
-## Login
+## Login e cadastro
 
-- E-mail atual: `melque@sismos.br`.
-- A senha e o segredo de sessão ficam em `/home/melque/sismos-br/.env`
-  (`LOGIN_EMAIL`, `LOGIN_SENHA`, `SESSION_SECRET`), modo 600.
+- Contas ficam na tabela `usuarios` (e-mail único, hash PBKDF2-HMAC-SHA256 com
+  salt por usuário).
+- O site tem auto-cadastro em `/registrar`; depois de criar, o usuário já entra.
+- O primeiro usuário é criado no boot a partir de `LOGIN_EMAIL`/`LOGIN_SENHA`
+  do `.env` **somente quando a tabela está vazia**. Depois disso, o `.env` não
+  altera senhas existentes.
 - Sessão em cookie assinado, validade de 12 h (`SESSION_TTL`).
-- 5 tentativas erradas por IP em 5 minutos bloqueiam temporariamente.
-- Para trocar a senha: edite o `.env` e reinicie apenas o app
-  (`pkill -f '[p]ython app.py'` e rode o `start_servidor.sh`).
+- 5 tentativas de login erradas por IP em 5 minutos bloqueiam temporariamente;
+  cadastro limitado a 10 tentativas por IP por hora.
+- Para trocar a senha de um usuário, atualize o hash na tabela (ou apague a
+  conta e cadastre de novo).
 
 ## Comandos
 

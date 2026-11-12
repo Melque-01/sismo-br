@@ -12,7 +12,7 @@ restrições do container.
 
 ## O que o site faz
 
-- **Login obrigatório** (e-mail e senha definidos no `.env`; sessão em cookie assinado).
+- **Login e cadastro**: o usuário cria a própria conta (e-mail e senha) e entra na hora; senha guardada com PBKDF2 e sessão em cookie assinado.
 - Grade de densidade com célula de 0,25°, 0,5°, 1° ou 2°.
 - Duas métricas: contagem de eventos e eventos por 1.000 km² (normalizada).
 - Filtros por período, magnitude, profundidade, fonte, UF e categoria SISBRA.
