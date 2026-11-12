@@ -73,6 +73,10 @@
 
   function buscarJSON(url) {
     return fetch(url, { headers: { accept: "application/json" } }).then(function (r) {
+      if (r.status === 401) {
+        window.location.href = "/login";
+        throw new Error("Sessão expirada. Faça login novamente.");
+      }
       return r.json().catch(function () {
         return { ok: false, erro: "Resposta inválida do servidor." };
       }).then(function (corpo) {
@@ -82,6 +86,17 @@
         return corpo;
       });
     });
+  }
+
+  function configurarChart() {
+    if (!window.Chart) {
+      return;
+    }
+    var familia = window.getComputedStyle(document.body).fontFamily;
+    Chart.defaults.font.family = familia;
+    Chart.defaults.font.size = 11;
+    Chart.defaults.color = "#93a1b1";
+    Chart.defaults.borderColor = "rgba(36, 48, 63, 0.7)";
   }
 
   /* --- Filtros ---------------------------------------------------------- */
@@ -451,7 +466,8 @@
             backgroundColor: "rgba(240, 112, 91, 0.18)",
             fill: true,
             pointRadius: 0,
-            borderWidth: 1.6,
+            pointHitRadius: 8,
+            borderWidth: 1.5,
             tension: 0.25,
           },
         ],
@@ -459,10 +475,24 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        layout: { padding: { top: 4, right: 4 } },
         plugins: { legend: { display: false } },
         scales: {
-          x: { ticks: { maxTicksLimit: 6, color: "#93a1b1" }, grid: { display: false } },
-          y: { beginAtZero: true, ticks: { color: "#93a1b1" }, grid: { color: "rgba(36,48,63,0.7)" } },
+          x: {
+            ticks: {
+              autoSkip: true,
+              maxTicksLimit: 6,
+              maxRotation: 0,
+              font: { size: 10 },
+            },
+            grid: { display: false },
+          },
+          y: {
+            beginAtZero: true,
+            ticks: { maxTicksLimit: 5, precision: 0, font: { size: 10 } },
+            grid: { color: "rgba(36, 48, 63, 0.7)" },
+          },
         },
       },
     });
@@ -494,17 +524,33 @@
             label: "Eventos",
             data: valores,
             backgroundColor: "#b73779",
+            hoverBackgroundColor: "#f0705b",
             borderRadius: 3,
+            barPercentage: 0.9,
+            categoryPercentage: 0.9,
           },
         ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        layout: { padding: { top: 4, right: 4 } },
         plugins: { legend: { display: false } },
         scales: {
-          x: { ticks: { maxTicksLimit: 8, color: "#93a1b1" }, grid: { display: false } },
-          y: { beginAtZero: true, ticks: { color: "#93a1b1" }, grid: { color: "rgba(36,48,63,0.7)" } },
+          x: {
+            ticks: {
+              autoSkip: true,
+              maxTicksLimit: 7,
+              maxRotation: 0,
+              font: { size: 10 },
+            },
+            grid: { display: false },
+          },
+          y: {
+            beginAtZero: true,
+            ticks: { maxTicksLimit: 5, precision: 0, font: { size: 10 } },
+            grid: { color: "rgba(36, 48, 63, 0.7)" },
+          },
         },
       },
     });
@@ -681,6 +727,7 @@
     el.metrica = $("metrica");
 
     criarMapa();
+    configurarChart();
 
     document.getElementById("form-filtros").addEventListener("submit", function (evento) {
       evento.preventDefault();

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar — Sismos BR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="tela-login">
+  <main class="login-caixa" aria-labelledby="login-titulo">
+    <div class="login-marca">
+      <span class="marca-simbolo" aria-hidden="true"></span>
+      <div>
+        <h1>Sismos BR</h1>
+        <p>Densidade de epicentros no Brasil</p>
+      </div>
+    </div>
+
+    <h2 id="login-titulo">Entrar na plataforma</h2>
+    <p class="login-subtitulo">Acesso restrito ao catálogo e ao mapa.</p>
+
+    <form method="post" action="/login" class="login-form">
+      <div class="campo-login">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" name="email" value="{{email}}"
+               autocomplete="username" inputmode="email" required autofocus
+               placeholder="voce@exemplo.com">
+      </div>
+
+      <div class="campo-login">
+        <label for="senha">Senha</label>
+        <div class="senha-campo">
+          <input type="password" id="senha" name="senha"
+                 autocomplete="current-password" required
+                 placeholder="Sua senha">
+          <button type="button" class="link-senha" id="mostrar-senha"
+                  aria-controls="senha" aria-pressed="false">Mostrar</button>
+        </div>
+      </div>
+
+      <p class="login-erro" role="alert">{{erro}}</p>
+
+      <button type="submit" class="botao-entrar">Entrar</button>
+    </form>
+
+    <p class="login-nota">
+      Esqueceu a senha? Fale com o responsável pelo trabalho.
+    </p>
+  </main>
+
+  <script>
+    (function () {
+      var botao = document.getElementById("mostrar-senha");
+      var campo = document.getElementById("senha");
+      botao.addEventListener("click", function () {
+        var visivel = campo.type === "text";
+        campo.type = visivel ? "password" : "text";
+        botao.textContent = visivel ? "Mostrar" : "Ocultar";
+        botao.setAttribute("aria-pressed", String(!visivel));
+      });
+    })();
+  </script>
+</body>
+</html>

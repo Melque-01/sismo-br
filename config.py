@@ -67,6 +67,17 @@ TETO_PONTOS = 20000
 # Ano mínimo aceito nos filtros (descarta datas absurdas do catálogo).
 ANO_MIN = 1500
 
+# --- Login ---------------------------------------------------------------
+# Credenciais do único usuário do site. Sem LOGIN_SENHA, o login fica
+# desabilitado (ninguém entra).
+LOGIN_EMAIL = os.getenv("LOGIN_EMAIL", "")
+LOGIN_SENHA = os.getenv("LOGIN_SENHA", "")
+
+# Segredo que assina o cookie de sessão. Se vazio, um segredo aleatório é
+# gerado no boot (sessões caem a cada reinício).
+SEGREDO_SESSAO = os.getenv("SESSION_SECRET", "")
+SESSAO_TTL = int(os.getenv("SESSION_TTL", "43200"))  # 12 horas
+
 # --- Caminhos -------------------------------------------------------------
 PASTA_DADOS = RAIZ / "dados"
 PASTA_BRUTOS = PASTA_DADOS / "brutos"

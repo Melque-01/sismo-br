@@ -17,7 +17,7 @@ def escapar(texto):
     return html.escape(str(texto))
 
 
-def render(nome_template, **variaveis):
+def render(nome_template, status=200, **variaveis):
     """Carrega um template e substitui os marcadores {{chave}}."""
     caminho = os.path.join(PASTA_TEMPLATES, nome_template)
     with open(caminho, encoding="utf-8") as arquivo:
@@ -26,7 +26,7 @@ def render(nome_template, **variaveis):
     for chave, valor in variaveis.items():
         pagina = pagina.replace("{{" + chave + "}}", escapar(valor))
 
-    return 200, {"content-type": "text/html; charset=utf-8"}, pagina.encode("utf-8")
+    return status, {"content-type": "text/html; charset=utf-8"}, pagina.encode("utf-8")
 
 
 def redirecionar(url, status=303):

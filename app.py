@@ -21,9 +21,17 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import config
 from controles import respostas
 from rotas.rotas import ROTAS
+from servicos import sessoes
 
 RAIZ = os.path.dirname(os.path.abspath(__file__))
 PASTA_STATIC = os.path.join(RAIZ, "static")
+
+# Rotas que não exigem login (a página de login e o healthcheck).
+ROTAS_PUBLICAS = {
+    ("GET", "/login"),
+    ("POST", "/login"),
+    ("GET", "/api/status"),
+}
 
 
 class Manipulador(BaseHTTPRequestHandler):
@@ -57,21 +65,54 @@ class Manipulador(BaseHTTPRequestHandler):
         if metodo in ("POST", "PUT", "DELETE"):
             dados.update(self._ler_corpo())
 
+        cabecalhos = {nome.lower(): valor for nome, valor in self.headers.items()}
+        dados["_headers"] = cabecalhos
+        dados["_cookies"] = self._ler_cookies(cabecalhos.get("cookie") or "")
+        dados["_proto"] = (
+            (cabecalhos.get("x-forwarded-proto") or "http").split(",")[0].strip()
+        )
+        dados["_ip"] = self.client_address[0]
+
         funcao = ROTAS.get((metodo, caminho))
         if funcao is None:
             return self._enviar(
                 *respostas.json_resposta({"erro": "rota não encontrada"}, 404)
             )
 
+        if (metodo, caminho) not in ROTAS_PUBLICAS:
+            email = sessoes.validar_token(
+                dados["_cookies"].get(sessoes.NOME_COOKIE)
+            )
+            if not email:
+                if caminho.startswith("/api/"):
+                    return self._enviar(
+                        *respostas.json_resposta(
+                            {"ok": False, "erro": "faça login para continuar"}, 401
+                        )
+                    )
+                return self._enviar(*respostas.redirecionar("/login"))
+            dados["_email"] = email
+
         try:
-            status, cabecalhos, corpo = funcao(dados)
+            status, cabecalhos_resposta, corpo = funcao(dados)
         except Exception as erro:  # noqa: BLE001 - falha inesperada vira 500
             traceback.print_exc()
             return self._enviar(
                 *respostas.json_resposta({"erro": "erro interno: {}".format(erro)}, 500)
             )
 
-        self._enviar(status, cabecalhos, corpo)
+        self._enviar(status, cabecalhos_resposta, corpo)
+
+    @staticmethod
+    def _ler_cookies(cabecalho):
+        """Converte 'a=1; b=2' em dicionário."""
+        cookies = {}
+        for parte in cabecalho.split(";"):
+            if "=" not in parte:
+                continue
+            nome, valor = parte.split("=", 1)
+            cookies[nome.strip()] = valor.strip()
+        return cookies
 
     def _ler_corpo(self):
         """Lê o corpo da requisição e devolve um dicionário."""
@@ -136,6 +177,17 @@ class Manipulador(BaseHTTPRequestHandler):
 
 
 def main():
+    if not config.LOGIN_EMAIL or not config.LOGIN_SENHA:
+        print(
+            "AVISO: LOGIN_EMAIL/LOGIN_SENHA não configurados. O site exige "
+            "login e ninguém conseguirá entrar até definir as credenciais."
+        )
+    if not config.SEGREDO_SESSAO:
+        print(
+            "AVISO: SESSION_SECRET não definido; as sessões serão invalidadas "
+            "a cada reinício do processo."
+        )
+
     try:
         from db.database import criar_tabelas
 

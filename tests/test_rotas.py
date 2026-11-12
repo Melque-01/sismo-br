@@ -9,6 +9,7 @@ class TestRotas(unittest.TestCase):
     def test_rotas_declaradas(self):
         for caminho in [
             "/",
+            "/login",
             "/api/densidade",
             "/api/sismos",
             "/api/celula",
@@ -19,6 +20,8 @@ class TestRotas(unittest.TestCase):
             "/api/importacoes",
         ]:
             self.assertIn(("GET", caminho), ROTAS)
+        self.assertIn(("POST", "/login"), ROTAS)
+        self.assertIn(("POST", "/logout"), ROTAS)
 
     def test_filtro_invalido_vira_400(self):
         status, cabecalhos, corpo = sismo_controle.api_densidade({"celula": "0.3"})

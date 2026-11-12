@@ -6,9 +6,12 @@ Toda função recebe um dicionário `dados` (query string + corpo) e devolve
 a tupla (status, cabeçalhos, corpo_em_bytes).
 """
 
-from controles import home_controle, sismo_controle
+from controles import auth_controle, home_controle, sismo_controle
 
 ROTAS = {
+    ("GET", "/login"): auth_controle.login_form,
+    ("POST", "/login"): auth_controle.login,
+    ("POST", "/logout"): auth_controle.logout,
     ("GET", "/"): home_controle.index,
     ("GET", "/api/densidade"): sismo_controle.api_densidade,
     ("GET", "/api/sismos"): sismo_controle.api_sismos,

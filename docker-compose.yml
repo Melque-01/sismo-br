@@ -27,6 +27,9 @@ services:
       DB_NAME: sismos_br
       DB_USER: sismos_br
       DB_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD no arquivo .env}
+      LOGIN_EMAIL: ${LOGIN_EMAIL:-}
+      LOGIN_SENHA: ${LOGIN_SENHA:-}
+      SESSION_SECRET: ${SESSION_SECRET:-}
     ports:
       - "${APP_PORT:-8080}:8080"
     depends_on:
