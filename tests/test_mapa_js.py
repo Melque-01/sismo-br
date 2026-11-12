@@ -10,6 +10,9 @@ class TestMapaJs(unittest.TestCase):
         with open(caminho, encoding="utf-8") as arquivo:
             js = arquivo.read()
         self.assertIn("server.arcgisonline.com", js)
+        self.assertIn("World_Imagery", js)
+        self.assertIn("World_Boundaries_and_Places", js)
+        self.assertNotIn("World_Dark_Gray_Base", js)
         self.assertNotIn("tile.openstreetmap.org", js)
         self.assertNotIn("basemaps.cartocdn.com", js)
 

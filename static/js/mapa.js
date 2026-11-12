@@ -206,14 +206,19 @@
     });
 
     L.tileLayer(
-      "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/" +
-        "World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+      "https://server.arcgisonline.com/ArcGIS/rest/services/" +
+        "World_Imagery/MapServer/tile/{z}/{y}/{x}",
       {
         maxZoom: 16,
         attribution:
           'Tiles &copy; <a href="https://www.esri.com/">Esri</a> — ' +
-          "Esri, DeLorme, NAVTEQ",
+          "Esri, Maxar, Earthstar Geographics",
       }
+    ).addTo(estado.mapa);
+    L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/" +
+        "World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+      { maxZoom: 16 }
     ).addTo(estado.mapa);
 
     L.control.scale({ imperial: false }).addTo(estado.mapa);

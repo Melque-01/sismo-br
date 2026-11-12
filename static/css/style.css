@@ -242,7 +242,10 @@ button.secundario {
   background: #0d1117;
 }
 
-/* O basemap CARTO escuro já combina com o tema; sem filtro nos tiles. */
+/* Satélite Esri escurecido para a grade de densidade continuar legível. */
+.mapa-area .leaflet-tile-pane {
+  filter: brightness(0.45) saturate(0.85) contrast(1.08);
+}
 
 .legenda {
   position: absolute;
