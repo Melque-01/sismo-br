@@ -1,67 +1,67 @@
 {
-  "voz": "pt-BR-FranciscaNeural",
+  "voz": "pt-BR-AntonioNeural",
   "pausa": 0.45,
-  "total": 133.956,
+  "total": 136.332,
   "cenas": [
     {
       "nome": "intro",
       "inicio": 0.0,
-      "duracao": 13.416,
-      "fim": 13.416
+      "duracao": 13.608,
+      "fim": 13.608
     },
     {
       "nome": "dados",
-      "inicio": 13.866,
-      "duracao": 14.856,
-      "fim": 28.722
+      "inicio": 14.058,
+      "duracao": 14.712,
+      "fim": 28.77
     },
     {
       "nome": "postgis",
-      "inicio": 29.172,
-      "duracao": 15.336,
-      "fim": 44.508
+      "inicio": 29.22,
+      "duracao": 15.456,
+      "fim": 44.676
     },
     {
       "nome": "mapa",
-      "inicio": 44.958,
-      "duracao": 15.312,
-      "fim": 60.27
+      "inicio": 45.126,
+      "duracao": 15.816,
+      "fim": 60.942
     },
     {
       "nome": "filtros",
-      "inicio": 60.72,
-      "duracao": 14.064,
-      "fim": 74.784
+      "inicio": 61.392,
+      "duracao": 15.48,
+      "fim": 76.872
     },
     {
       "nome": "painel",
-      "inicio": 75.234,
-      "duracao": 9.984,
-      "fim": 85.218
+      "inicio": 77.322,
+      "duracao": 10.464,
+      "fim": 87.786
     },
     {
       "nome": "login",
-      "inicio": 85.668,
-      "duracao": 11.424,
-      "fim": 97.092
+      "inicio": 88.236,
+      "duracao": 11.496,
+      "fim": 99.732
     },
     {
       "nome": "arquitetura",
-      "inicio": 97.542,
-      "duracao": 13.512,
-      "fim": 111.054
+      "inicio": 100.182,
+      "duracao": 13.68,
+      "fim": 113.862
     },
     {
       "nome": "cloudflare",
-      "inicio": 111.504,
-      "duracao": 14.304,
-      "fim": 125.808
+      "inicio": 114.312,
+      "duracao": 14.496,
+      "fim": 128.808
     },
     {
       "nome": "fechamento",
-      "inicio": 126.258,
-      "duracao": 7.248,
-      "fim": 133.506
+      "inicio": 129.258,
+      "duracao": 6.624,
+      "fim": 135.882
     }
   ]
 }

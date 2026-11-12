@@ -12,8 +12,8 @@ RAIZ = Path(__file__).resolve().parent
 AUDIO = RAIZ / "audio"
 AUDIO.mkdir(exist_ok=True)
 
-VOZ = "pt-BR-FranciscaNeural"
-RITMO = "-4%"
+VOZ = "pt-BR-AntonioNeural"
+RITMO = "-2%"
 PAUSA = 0.45  # segundos entre cenas
 
 CENAS = [
