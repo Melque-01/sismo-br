@@ -1,4 +1,10 @@
-# Docker
+# Docker (stack validada; não é o deploy ativo)
+
+> **Estado atual (12/11/2026):** o deploy ativo está em `<host-do-servidor>:2222`
+> rodando nativamente, sem containers. A stack abaixo foi construída, testada
+> no Docker Desktop local (PostGIS + importação + API) e parada depois. Não dá
+> para rodá-la no host SSH atual: ele é um container sem permissões para
+> namespaces/`unshare`. Use uma VM real com Docker Engine.
 
 Stack com três containers:
 

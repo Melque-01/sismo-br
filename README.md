@@ -5,8 +5,10 @@ brasileiro a partir do catálogo histórico do **SISBRA/RSBR** (1690–2023) e d
 catálogo **FDSN do Moho/IAG-USP** (2024 em diante).
 
 Aplicação em **Python puro, no padrão MVC, sem framework web** — mesma
-arquitetura do projeto Geo Buss. Roda em uma VM Ubuntu Server e é publicada por
-**Cloudflare Tunnel**.
+arquitetura do projeto Geo Buss. Está publicada no servidor SSH
+`<host-do-servidor>:2222`, com PostgreSQL/PostGIS, processo Python e Cloudflare
+Tunnel. A stack Docker também foi testada, mas não roda no servidor atual por
+restrições do container.
 
 ## O que o site faz
 
@@ -37,11 +39,16 @@ controles/            validação dos filtros, respostas JSON/HTML
 modelo/               SQL parametrizado, upsert, consultas espaciais
    │
    ▼
-PostgreSQL 18 + PostGIS 3.6   (grade via floor()/ST_MakeEnvelope)
+ PostgreSQL 16 + PostGIS 3.4   (servidor atual; grade via PostGIS)
 ```
 
 A importação é offline do ponto de vista da requisição: um CLI baixa os
 catálogos, normaliza e grava no banco; o site só lê o banco.
+
+No host atual, `app.py`, PostgreSQL e `cloudflared` rodam como processos
+nativos, não em containers. O host é um container sem systemd e sem suporte a
+namespaces; por isso, um reinício do host exige executar
+`scripts/start_servidor.sh` manualmente.
 
 ## Estrutura de pastas
 
@@ -53,7 +60,7 @@ controles/             home, validação de filtros, API, helpers de resposta
 modelo/                sismos (upsert + consultas) e log de importações
 servicos/              parsers SISBRA/FDSN, mapa codarea→UF, estatística
 db/                    schema.sql e acesso ao Postgres (psycopg 3)
-scripts/               importação e scripts de deploy/verificação da VM
+scripts/               importação, deploy e operação do servidor SSH
 deploy/                units systemd e timer de atualização
 templates/, static/    interface (HTML, CSS, JS)
 docs/                  dados, deploy e estado da VM
@@ -124,16 +131,22 @@ Testes de banco são pulados por padrão; na VM:
 SISMOS_TESTAR_DB=1 python -m unittest discover -s tests -v
 ```
 
-## Estado atual da publicação
+## Estado atual da publicação (12/11/2026)
 
 - Servidor SSH `melque@<host-do-servidor>:2222` (Ubuntu 24.04 em container, sem
-  systemd/Docker).
-- PostgreSQL 16 + PostGIS 3.4 + aplicação em `/home/melque/sismos-br` (porta 8080).
+  systemd; Docker não consegue criar namespaces nesse host).
+- PostgreSQL 16.15 + PostGIS 3.4.2; app Python 3.12.3 em
+  `/home/melque/sismos-br`, porta 8080.
 - Túnel público: `<tunel-efemero>`
   (URL temporária — muda se o `cloudflared` reiniciar).
 - Base: **5.141 eventos** no recorte do Brasil (5.044 SISBRA + 97 FDSN).
-- Stack Docker (`Dockerfile` + `docker-compose.yml`) pronta e testada para uma
-  VM de verdade (Google Cloud/Oracle).
+- Docker Compose (`db`, `app`, `cloudflared`) foi construído e testado no
+  Docker Desktop local; containers locais foram parados. A imagem não está
+  rodando no servidor SSH.
+
+Para conferir, iniciar serviços e atualizar dados, veja
+[docs/SERVIDOR_SSH.md](docs/SERVIDOR_SSH.md). Para a stack Docker, veja
+[docs/DOCKER.md](docs/DOCKER.md).
 
 Detalhes em [docs/SERVIDOR_SSH.md](docs/SERVIDOR_SSH.md),
 [docs/DADOS.md](docs/DADOS.md), [docs/DEPLOY_VM.md](docs/DEPLOY_VM.md),
