@@ -176,6 +176,36 @@ class Manipulador(BaseHTTPRequestHandler):
             for chave, valores in urllib.parse.parse_qs(bruto).items()
         }
 
+    def _intervalo_range(self, tamanho):
+        """Interpreta um único Range. Devolve (inicio, fim), None ou 'invalido'."""
+        cabecalho = (self.headers.get("range") or "").strip()
+        if not cabecalho:
+            return None
+        if not cabecalho.lower().startswith("bytes="):
+            return "invalido"
+
+        bruto = cabecalho[6:].strip()
+        if "," in bruto or "-" not in bruto:
+            return "invalido"
+
+        inicio_txt, fim_txt = bruto.split("-", 1)
+        try:
+            if not inicio_txt:
+                quantidade = int(fim_txt)
+                if quantidade <= 0:
+                    return "invalido"
+                inicio = max(0, tamanho - quantidade)
+                fim = tamanho - 1
+            else:
+                inicio = int(inicio_txt)
+                fim = int(fim_txt) if fim_txt else tamanho - 1
+        except ValueError:
+            return "invalido"
+
+        if tamanho <= 0 or inicio < 0 or inicio >= tamanho or fim < inicio:
+            return "invalido"
+        return inicio, min(fim, tamanho - 1)
+
     def _servir_static(self, caminho):
         """Entrega arquivos de `static/` bloqueando path traversal."""
         relativo = posixpath.normpath(
@@ -199,10 +229,43 @@ class Manipulador(BaseHTTPRequestHandler):
         ):
             tipo += "; charset=utf-8"
 
+        tamanho = os.path.getsize(arquivo)
+        intervalo = self._intervalo_range(tamanho)
+        if intervalo == "invalido":
+            return self._enviar(
+                416,
+                {
+                    "content-type": tipo,
+                    "accept-ranges": "bytes",
+                    "content-range": "bytes */{}".format(tamanho),
+                },
+                b"",
+            )
+        if intervalo is not None:
+            inicio, fim = intervalo
+            with open(arquivo, "rb") as arquivo_aberto:
+                arquivo_aberto.seek(inicio)
+                corpo = arquivo_aberto.read(fim - inicio + 1)
+            return self._enviar(
+                206,
+                {
+                    "content-type": tipo,
+                    "accept-ranges": "bytes",
+                    "content-range": "bytes {}-{}/{}".format(
+                        inicio, fim, tamanho
+                    ),
+                },
+                corpo,
+            )
+
         with open(arquivo, "rb") as arquivo_aberto:
             corpo = arquivo_aberto.read()
 
-        self._enviar(200, {"content-type": tipo}, corpo)
+        self._enviar(
+            200,
+            {"content-type": tipo, "accept-ranges": "bytes"},
+            corpo,
+        )
 
     def _enviar(self, status, cabecalhos, corpo):
         self.send_response(status)

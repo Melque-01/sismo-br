@@ -107,5 +107,44 @@ class TestSegurancaHttp(unittest.TestCase):
         self.assertNotIn(".env", resposta)
 
 
+class TestStaticRange(unittest.TestCase):
+    CAMINHO = "/static/css/style.css"
+
+    def _resposta(self, range_header=None):
+        cabecalhos = {"range": range_header} if range_header else {}
+        manipulador = _handler(cabecalhos, self.CAMINHO)
+        manipulador._despachar("GET")
+        bruto = manipulador.wfile.getvalue()
+        cabecalho, _, corpo = bruto.partition(b"\r\n\r\n")
+        return cabecalho.decode("latin-1").lower(), corpo
+
+    def test_sem_range_devolve_arquivo_inteiro(self):
+        cabecalho, corpo = self._resposta()
+        self.assertIn("200", cabecalho.splitlines()[0])
+        self.assertIn("accept-ranges: bytes", cabecalho)
+        self.assertIn(b":root", corpo)
+
+    def test_range_aberto_devolve_206(self):
+        cabecalho, corpo = self._resposta("bytes=0-9")
+        self.assertIn("206", cabecalho.splitlines()[0])
+        self.assertIn("content-range: bytes 0-9/", cabecalho)
+        self.assertIn(b":root", corpo)
+
+    def test_range_sufixo_devolve_ultimos_bytes(self):
+        cabecalho, corpo = self._resposta("bytes=-10")
+        self.assertIn("206", cabecalho.splitlines()[0])
+        self.assertEqual(len(corpo), 10)
+
+    def test_range_fora_do_arquivo_devolve_416(self):
+        cabecalho, corpo = self._resposta("bytes=999999-")
+        self.assertIn("416", cabecalho.splitlines()[0])
+        self.assertIn("content-range: bytes */", cabecalho)
+        self.assertEqual(corpo, b"")
+
+    def test_range_multiplo_e_invalido(self):
+        cabecalho, _ = self._resposta("bytes=0-1,4-5")
+        self.assertIn("416", cabecalho.splitlines()[0])
+
+
 if __name__ == "__main__":
     unittest.main()
