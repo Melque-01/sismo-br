@@ -14,6 +14,9 @@ Stack com três containers:
 | `app` | build local (`Dockerfile`) | aplicação Python (`http.server`) na 8080 |
 | `cloudflared` | `cloudflare/cloudflared` | túnel rápido público para o app |
 
+Não esqueça de definir `LOGIN_EMAIL`, `LOGIN_SENHA` e `SESSION_SECRET` no `.env`;
+sem eles ninguém consegue entrar no site.
+
 ## Requisitos do host
 
 - Docker Engine + Compose plugin.
@@ -83,4 +86,5 @@ docker run --rm -p 8080:8080 \
 ```
 
 Variáveis lidas pela aplicação: `HOST`, `PORTA`, `DB_HOST`, `DB_PORT`,
-`DB_NAME`, `DB_USER`, `DB_PASSWORD`.
+`DB_NAME`, `DB_USER`, `DB_PASSWORD`, `LOGIN_EMAIL`, `LOGIN_SENHA`,
+`SESSION_SECRET`.

@@ -35,6 +35,16 @@ navegador → Cloudflare Tunnel (HTTP/2) → cloudflared
          → http://127.0.0.1:8080 → app.py → PostgreSQL/PostGIS local
 ```
 
+## Login
+
+- E-mail atual: `melque@sismos.br`.
+- A senha e o segredo de sessão ficam em `/home/melque/sismos-br/.env`
+  (`LOGIN_EMAIL`, `LOGIN_SENHA`, `SESSION_SECRET`), modo 600.
+- Sessão em cookie assinado, validade de 12 h (`SESSION_TTL`).
+- 5 tentativas erradas por IP em 5 minutos bloqueiam temporariamente.
+- Para trocar a senha: edite o `.env` e reinicie apenas o app
+  (`pkill -f '[p]ython app.py'` e rode o `start_servidor.sh`).
+
 ## Comandos
 
 ```bash
