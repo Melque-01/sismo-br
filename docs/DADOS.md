@@ -100,5 +100,6 @@ Só a atualização recente:
 .venv/bin/python scripts/importar_catalogo.py --somente fdsn
 ```
 
-O `sismos-atualizar.timer` roda esse comando semanalmente. O log de cada
-execução fica na tabela `importacoes` e aparece em `/api/importacoes`.
+No servidor atual a atualização é manual (não há timer): rode o comando
+`--somente fdsn` depois de entrar por SSH. O log de cada execução fica na
+tabela `importacoes` e aparece em `/api/importacoes`.

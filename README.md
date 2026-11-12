@@ -61,12 +61,11 @@ controles/             home, validação de filtros, API, helpers de resposta
 modelo/                sismos (upsert + consultas) e log de importações
 servicos/              parsers SISBRA/FDSN, mapa codarea→UF, estatística
 db/                    schema.sql e acesso ao Postgres (psycopg 3)
-scripts/               importação, deploy e operação do servidor SSH
-deploy/                units systemd e timer de atualização
+scripts/               importação, banco e operação do servidor SSH
 templates/, static/    interface (HTML, CSS, JS)
-docs/                  dados, deploy e estado da VM
+docs/                  dados, servidor atual e Docker
 tests/                 testes unitários + integração (SISMOS_TESTAR_DB=1)
-tools/vm.py            ponte SSH/SCP (paramiko) para a VM
+tools/vm.py            ponte SSH/SCP (paramiko) para administração
 ```
 
 ## API
@@ -150,9 +149,7 @@ Para conferir, iniciar serviços e atualizar dados, veja
 [docs/DOCKER.md](docs/DOCKER.md).
 
 Detalhes em [docs/SERVIDOR_SSH.md](docs/SERVIDOR_SSH.md),
-[docs/DADOS.md](docs/DADOS.md), [docs/DEPLOY_VM.md](docs/DEPLOY_VM.md),
-[docs/DOCKER.md](docs/DOCKER.md) e
-[docs/AMBIENTE_VM.md](docs/AMBIENTE_VM.md).
+[docs/DADOS.md](docs/DADOS.md) e [docs/DOCKER.md](docs/DOCKER.md).
 
 ## Decisões e limitações
 
@@ -172,4 +169,4 @@ Detalhes em [docs/SERVIDOR_SSH.md](docs/SERVIDOR_SSH.md),
   `floor(coord / célula) * célula`; é a mesma conta usada na agregação.
 - **Catálogo SISBRA até 2023 + FDSN de 2024 em diante**, sem sobreposição.
 - **Túnel rápido da Cloudflare** é adequado para demonstração; para um link
-  fixo é preciso um túnel nomeado (ver `docs/DEPLOY_VM.md`).
+  fixo é preciso um túnel nomeado (ver `docs/SERVIDOR_SSH.md`).

@@ -106,8 +106,8 @@ docker compose exec app python scripts/importar_catalogo.py
 
 ## Histórico
 
-- A VM VirtualBox local (`ubunto`) sofreu kernel panic e foi desligada; o
-  ambiente dela está documentado em `docs/AMBIENTE_VM.md`.
+- A VM VirtualBox local (`ubunto`) sofreu kernel panic e foi desligada; não é
+  mais usada.
 - A imagem Docker existe no repositório e foi validada localmente, mas não está
   ativa nem hospedada em `<host-do-servidor>`.
 - A atualização do FDSN é manual; não há timer semanal neste host.
