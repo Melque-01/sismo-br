@@ -90,8 +90,18 @@ class TestSisbra(unittest.TestCase):
         a = evento_id_sisbra("2023", "1229", "160100", -8.35, -35.99, 2.2)
         b = evento_id_sisbra("2023", "1229", "160100", -8.35, -35.99, 2.2)
         self.assertEqual(a, b)
-        self.assertEqual(len(a), 32)
+        self.assertEqual(len(a), 64)
         self.assertTrue(all(c in "0123456789abcdef" for c in a))
+
+    def test_evento_id_e_sha256_nao_md5(self):
+        import hashlib
+
+        chave = "2023|1229|160100|-8.35|-35.99|2.2"
+        identificador = evento_id_sisbra(
+            "2023", "1229", "160100", -8.35, -35.99, 2.2
+        )
+        self.assertEqual(identificador, hashlib.sha256(chave.encode()).hexdigest())
+        self.assertNotEqual(identificador, hashlib.md5(chave.encode()).hexdigest())
 
     def test_evento_id_difere_entre_eventos(self):
         ids = {e["evento_id"] for e in self.eventos}

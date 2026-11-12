@@ -109,7 +109,7 @@ class TestSisbraDesalinhado(unittest.TestCase):
         ids = [e["evento_id"] for e in self.eventos]
         self.assertEqual(len(set(ids)), 4)
         for i in ids:
-            self.assertEqual(len(i), 32)
+            self.assertEqual(len(i), 64)
 
     def test_linha_sem_coordenada_nao_e_recuperada(self):
         linha = (

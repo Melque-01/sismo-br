@@ -89,6 +89,23 @@ não sobem sozinhos**. Depois de qualquer reinício, entre por SSH e rode:
 bash /home/melque/sismos-br/scripts/start_servidor.sh
 ```
 
+### Subida automática (wrapper do sshd)
+
+Desde 12/11/2026, `/usr/sbin/sshd` no container é um wrapper: no boot ele roda
+`start_servidor.sh` como `melque` (log em `/home/melque/sismos-br/boot.log`) e
+depois exec o sshd real (`/usr/sbin/sshd.real`). Ou seja: **os serviços sobem
+sozinhos quando o container reinicia** — o manual acima virou fallback. A URL
+do túnel rápido ainda muda a cada subida; consulte `boot.log` ou o
+`status_servidor.sh` para a URL atual.
+
+### Acesso SSH
+
+SSH no container exige **chave** (`PasswordAuthentication no`, `X11Forwarding
+no`, `AllowUsers melque`). Os drop-ins ficam em `/etc/ssh/sshd_config.d/`
+(`00-melque-password.conf`, `99-melque.conf`), com backup em
+`/home/melque/ssh-backup/`. O `sudo` do `melque` segue sem senha porque
+`start_servidor.sh` precisa dele.
+
 A URL do túnel rápido muda quando `cloudflared` reinicia; o script imprime a
 nova URL no final. Atualize o link salvo se o túnel tiver sido reiniciado.
 

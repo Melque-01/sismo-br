@@ -49,14 +49,14 @@ def evento_id_sisbra(
     lon: float,
     mag: Optional[float],
 ) -> str:
-    """Identificador estável (md5) de um evento do catálogo SISBRA.
+    """Identificador estável (sha-256) de um evento do catálogo SISBRA.
 
     O catálogo não traz id próprio, então derivamos o id dos campos que
     identificam o evento. Os mesmos valores geram sempre o mesmo id, o que
     permite o upsert idempotente no banco.
     """
     chave = "{}|{}|{}|{}|{}|{}".format(ano, mmdd, hora, lat, lon, mag)
-    return hashlib.md5(chave.encode("utf-8")).hexdigest()
+    return hashlib.sha256(chave.encode("utf-8")).hexdigest()
 
 
 def _campo(linha: str, inicio: int, fim: int) -> str:

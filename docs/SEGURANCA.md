@@ -143,3 +143,30 @@ rate limit global e SSH com senha + sudo sem senha.
 4. Headers de segurança e CSP.
 5. Erros genéricos, CSRF, verificação de e-mail.
 6. Itens baixos e atualizações do SO.
+
+## Correções aplicadas (12/11/2026)
+
+- **A1 resolvido** — `app.py` responde 301 para HTTPS quando o proxy reporta
+  `X-Forwarded-Proto: http`; HSTS (`max-age=31536000; includeSubDomains`) em
+  respostas HTTPS. Commit `80055e2`.
+- **A2 parcial** — `app.py` aceita `X-Real-IP`/`X-Forwarded-For` **apenas**
+  quando o peer é proxy confiável (`PROXIES_CONFIAVEIS`), cobrindo cloudflared
+  e o nginx futuro. Pendente: limite por conta/e-mail.
+- **A3 resolvido** — `PasswordAuthentication no`, `X11Forwarding no`,
+  `AllowUsers melque` (drop-ins em `/etc/ssh/sshd_config.d/`, backup em
+  `/home/melque/ssh-backup/`). O `NOPASSWD` do sudo foi mantido de propósito:
+  `start_servidor.sh` precisa dele e o root do container não é o root do host.
+- **M1 parcial** — `nosniff`, `X-Frame-Options: DENY`,
+  `Referrer-Policy: no-referrer`, `Permissions-Policy` e HSTS em todas as
+  respostas. CSP ainda pendente (exige nonce/hash nos inline scripts).
+- **M3 resolvido** — erro 500 genérico (`{"erro": "erro interno"}`); detalhe
+  só no log do servidor.
+- **B2 resolvido** — `evento_id` do SISBRA agora é SHA-256 (64 hex). A
+  tabela foi reimportada (backup em `/home/melque/sismos_antes_b2.sql`);
+  contagem inalterada: 5.044 SISBRA + 97 FDSN.
+- **B4 resolvido** — `Cache-Control: no-store` em `/api/*`, `/login` e
+  `/registrar`.
+- **B5 parcial** — X11 desabilitado; upgrades de pacotes do SO pendentes.
+
+Pendentes: M2 (verificação de e-mail/convite), M4 (CSRF), B1 (`/api/status`),
+B3 (revogação de sessão), B5 (upgrades), B6 (remover Docker do host), CSP.
