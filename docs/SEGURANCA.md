@@ -149,9 +149,13 @@ rate limit global e SSH com senha + sudo sem senha.
 - **A1 resolvido** — `app.py` responde 301 para HTTPS quando o proxy reporta
   `X-Forwarded-Proto: http`; HSTS (`max-age=31536000; includeSubDomains`) em
   respostas HTTPS. Commit `80055e2`.
-- **A2 parcial** — `app.py` aceita `X-Real-IP`/`X-Forwarded-For` **apenas**
+- **A2 resolvido** — `app.py` aceita `X-Real-IP`/`X-Forwarded-For` **apenas**
   quando o peer é proxy confiável (`PROXIES_CONFIAVEIS`), cobrindo cloudflared
-  e o nginx futuro. Pendente: limite por conta/e-mail.
+  e o nginx futuro; além disso, 10 falhas por e-mail em 15 minutos bloqueiam a
+  conta mesmo vindas de IPs diferentes (`_FALHAS_CONTA` em `auth_controle.py`).
+  Login correto zera o contador da conta. Os dicionários de tentativas têm teto
+  (`LIMITE_CHAVES`) para não crescerem com e-mails aleatórios. Efeito colateral
+  aceito: um atacante pode bloquear uma conta conhecida por 15 minutos.
 - **A3 resolvido** — `PasswordAuthentication no`, `X11Forwarding no`,
   `AllowUsers melque` (drop-ins em `/etc/ssh/sshd_config.d/`, backup em
   `/home/melque/ssh-backup/`). O `NOPASSWD` do sudo foi mantido de propósito:
@@ -161,6 +165,10 @@ rate limit global e SSH com senha + sudo sem senha.
   respostas. CSP ainda pendente (exige nonce/hash nos inline scripts).
 - **M3 resolvido** — erro 500 genérico (`{"erro": "erro interno"}`); detalhe
   só no log do servidor.
+- **M4 resolvido** — token CSRF de duplo envio (cookie `sismos_csrf` +
+  `_csrf` nos formulários) em login, cadastro e logout; `hmac.compare_digest`
+  na validação; POST sem token responde 403 e logout inválido não apaga a
+  sessão.
 - **B2 resolvido** — `evento_id` do SISBRA agora é SHA-256 (64 hex). A
   tabela foi reimportada (backup em `/home/melque/sismos_antes_b2.sql`);
   contagem inalterada: 5.044 SISBRA + 97 FDSN.
@@ -168,5 +176,5 @@ rate limit global e SSH com senha + sudo sem senha.
   `/registrar`.
 - **B5 parcial** — X11 desabilitado; upgrades de pacotes do SO pendentes.
 
-Pendentes: M2 (verificação de e-mail/convite), M4 (CSRF), B1 (`/api/status`),
+Pendentes: M2 (verificação de e-mail/convite), B1 (`/api/status`),
 B3 (revogação de sessão), B5 (upgrades), B6 (remover Docker do host), CSP.

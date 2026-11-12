@@ -15,6 +15,7 @@ from typing import Optional
 import config
 
 NOME_COOKIE = "sismos_sessao"
+NOME_COOKIE_CSRF = "sismos_csrf"
 _SEGREDO_ALEATORIO = None
 
 
@@ -72,3 +73,24 @@ def validar_token(token: Optional[str]) -> Optional[str]:
         return None
     email = dados.get("sub")
     return email if isinstance(email, str) and email else None
+
+
+def criar_token_csrf() -> str:
+    """Token aleatório para o duplo envio (cookie + campo do formulário)."""
+    return secrets.token_urlsafe(32)
+
+
+def token_csrf(cookies) -> Optional[str]:
+    """Token CSRF já presente no cookie, se tiver tamanho plausível."""
+    token = (cookies or {}).get(NOME_COOKIE_CSRF)
+    if not isinstance(token, str) or len(token) < 20:
+        return None
+    return token
+
+
+def csrf_valido(cookies, enviado) -> bool:
+    """Compara o campo do formulário com o token do cookie."""
+    esperado = token_csrf(cookies)
+    if not esperado or not enviado:
+        return False
+    return hmac.compare_digest(esperado, str(enviado))

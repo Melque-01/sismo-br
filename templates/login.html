@@ -23,6 +23,7 @@
     <p class="login-subtitulo">Acesso restrito ao catálogo e ao mapa.</p>
 
     <form method="post" action="/login" class="login-form">
+      <input type="hidden" name="_csrf" value="{{csrf}}">
       <div class="campo-login">
         <label for="email">E-mail</label>
         <input type="email" id="email" name="email" value="{{email}}"

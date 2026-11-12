@@ -25,6 +25,7 @@
       <div class="usuario">
         <span class="usuario-email" title="Sessão atual">{{usuario}}</span>
         <form method="post" action="/logout">
+          <input type="hidden" name="_csrf" value="{{csrf}}">
           <button type="submit" class="secundario botao-sair">Sair</button>
         </form>
       </div>
