@@ -8,7 +8,6 @@
   var toque = window.matchMedia("(pointer: coarse)");
   var retrato = window.matchMedia("(orientation: portrait)");
   var atual = "";
-  var tentouHorizontal = false;
 
   function usarMobile() {
     return largura.matches || (toque.matches && retrato.matches);
@@ -25,10 +24,12 @@
   function aplicar() {
     var mobile = usarMobile();
     var fonte = mobile ? video.dataset.srcMobile : video.dataset.srcDesktop;
+    var capa = mobile ? video.dataset.posterMobile : video.dataset.posterDesktop;
     var tempo = video.currentTime || 0;
     var tocando = !video.paused && !video.ended;
 
     moldura.classList.toggle("video-moldura--retrato", mobile);
+    if (capa) video.poster = capa;
     if (baixar) baixar.href = fonte;
     if (fonte === atual) return;
 
@@ -52,9 +53,9 @@
   }
 
   video.addEventListener("error", function () {
-    if (tentouHorizontal || atual !== video.dataset.srcMobile) return;
-    tentouHorizontal = true;
+    if (atual !== video.dataset.srcMobile) return;
     atual = video.dataset.srcDesktop;
+    if (video.dataset.posterDesktop) video.poster = video.dataset.posterDesktop;
     if (baixar) baixar.href = atual;
     video.src = atual;
     video.load();
