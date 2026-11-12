@@ -1,19 +1,2 @@
-.env
-.venv/
-__pycache__/
-dados/brutos/
-*.log
-.playwright-mcp/
-.env.docker
-videos/sismos-br/node_modules/
-videos/sismos-br/video.html
-videos/sismos-br/*.mp4
-videos/sismos-br/*.wav
-videos/sismos-br/check*.png
-videos/sismos-br/frame_*.png
-videos/sismos-br/f*.png
-videos/sismos-br/v*.png
-videos/sismos-br/diag.js
-
-videos/sismos-br/audio/tmp/
+.env.venv/__pycache__/dados/brutos/*.log.playwright-mcp/.env.dockervideos/*.mp4
 
