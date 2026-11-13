@@ -1,52 +1,91 @@
 WEBVTT
 
-00:00:00.000 --> 00:00:07.800
-O Sismos BR é um mapa interativo que mostra onde os terremotos registrados no Brasil se concentram.
+00:00:00.000 --> 00:00:02.547
+O Sismos BR é um mapa interativo
 
-00:00:07.800 --> 00:00:13.608
-Ele cruza o catálogo histórico do SISBRA com os eventos recentes do serviço FDSN, da USP.
+00:00:02.547 --> 00:00:07.800
+que mostra onde os terremotos registrados no Brasil se concentram.
 
-00:00:14.058 --> 00:00:19.900
-São cinco mil cento e quarenta e um eventos, de mil seiscentos e noventa até dois mil e vinte e seis.
+00:00:07.800 --> 00:00:10.440
+Ele cruza o catálogo histórico do SISBRA
 
-00:00:19.900 --> 00:00:28.770
-Cada registro passa por um parser que corrige horário local, valida coordenadas e descarta o que está fora do território brasileiro.
+00:00:10.440 --> 00:00:13.608
+com os eventos recentes do serviço FDSN, da USP.
+
+00:00:14.058 --> 00:00:16.628
+São cinco mil cento e quarenta e um eventos,
+
+00:00:16.628 --> 00:00:19.900
+de mil seiscentos e noventa até dois mil e vinte e seis.
+
+00:00:19.900 --> 00:00:23.963
+Cada registro passa por um parser que corrige horário local,
+
+00:00:23.963 --> 00:00:28.770
+valida coordenadas e descarta o que está fora do território brasileiro.
 
 00:00:29.220 --> 00:00:32.750
 Os eventos viram pontos no PostgreSQL com PostGIS.
 
-00:00:32.750 --> 00:00:44.676
-A malha do IBGE define o limite das vinte e sete unidades federativas, e o banco calcula a grade: cada célula tem meio grau e guarda a contagem de sismos.
+00:00:32.750 --> 00:00:38.206
+A malha do IBGE define o limite das vinte e sete unidades federativas,
+
+00:00:38.206 --> 00:00:44.676
+e o banco calcula a grade: cada célula tem meio grau e guarda a contagem de sismos.
 
 00:00:45.126 --> 00:00:53.000
 No mapa, a cor indica densidade: quanto mais claro, mais eventos naquela área.
 
-00:00:53.000 --> 00:01:00.942
-A legenda mostra as faixas, e a métrica normalizada divide a contagem pela área real da célula, permitindo comparar regiões de tamanhos diferentes.
+00:00:53.000 --> 00:00:55.793
+A legenda mostra as faixas, e a métrica normalizada
+
+00:00:55.793 --> 00:00:58.149
+divide a contagem pela área real da célula,
+
+00:00:58.149 --> 00:01:00.942
+permitindo comparar regiões de tamanhos diferentes.
 
 00:01:01.392 --> 00:01:07.200
 Os filtros ajustam período, magnitude, profundidade, fonte e estado.
 
-00:01:07.200 --> 00:01:16.872
-Ao clicar numa célula, o rodapé lista os eventos que a formaram, com data, magnitude, profundidade e a ficha completa de cada sismo.
+00:01:07.200 --> 00:01:11.925
+Ao clicar numa célula, o rodapé lista os eventos que a formaram,
 
-00:01:17.322 --> 00:01:27.786
-O painel resume o recorte: total de eventos, período, maior magnitude, estados com mais registros, série anual e distribuição de magnitudes.
+00:01:11.925 --> 00:01:16.872
+com data, magnitude, profundidade e a ficha completa de cada sismo.
+
+00:01:17.322 --> 00:01:22.592
+O painel resume o recorte: total de eventos, período, maior magnitude,
+
+00:01:22.592 --> 00:01:27.786
+estados com mais registros, série anual e distribuição de magnitudes.
 
 00:01:28.236 --> 00:01:32.100
 O acesso é protegido por login.
 
-00:01:32.100 --> 00:01:39.732
-O usuário pode criar a própria conta em segundos; a senha é gravada com hash PBKDF2, e a sessão fica num cookie assinado.
+00:01:32.100 --> 00:01:35.216
+O usuário pode criar a própria conta em segundos;
+
+00:01:35.216 --> 00:01:39.732
+a senha é gravada com hash PBKDF2, e a sessão fica num cookie assinado.
 
 00:01:40.182 --> 00:01:44.800
 Por dentro, o sistema segue o padrão MVC em Python puro.
 
-00:01:44.800 --> 00:01:53.862
-O navegador chama a API, os controllers validam os filtros, os models executam SQL parametrizado e o PostGIS responde.
+00:01:44.800 --> 00:01:49.370
+O navegador chama a API, os controllers validam os filtros,
 
-00:01:54.312 --> 00:02:03.300
-A publicação usa o Cloudflare Tunnel: o servidor abre uma conexão de saída, sem precisar de IP público nem liberar portas.
+00:01:49.370 --> 00:01:53.862
+os models executam SQL parametrizado e o PostGIS responde.
+
+00:01:54.312 --> 00:01:57.083
+A publicação usa o Cloudflare Tunnel:
+
+00:01:57.083 --> 00:01:59.855
+o servidor abre uma conexão de saída,
+
+00:01:59.855 --> 00:02:03.300
+sem precisar de IP público nem liberar portas.
 
 00:02:03.300 --> 00:02:08.808
 A Cloudflare entrega o HTTPS e o professor acessa por uma URL pública.

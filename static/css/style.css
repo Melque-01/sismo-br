@@ -851,6 +851,7 @@ tbody tr:hover {
 }
 
 .video-moldura {
+  position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
@@ -868,6 +869,14 @@ tbody tr:hover {
   object-fit: contain;
 }
 
+/* Fallback nativo quando o vídeo entra em tela cheia. */
+.video-moldura video::cue {
+  background: rgba(11, 15, 20, 0.88);
+  color: #f8f4ec;
+  font-family: var(--fonte);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
 .video-moldura--retrato {
   width: min(100%, 420px);
   aspect-ratio: 9 / 16;
@@ -883,6 +892,165 @@ tbody tr:hover {
 
 .video-nota a {
   color: var(--destaque-2);
+}
+
+.video-acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.botao-legendas {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--texto-fraco);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.botao-legendas[hidden] {
+  display: none;
+}
+
+.botao-legendas:hover {
+  color: var(--texto);
+  border-color: var(--destaque);
+}
+
+.botao-legendas[aria-pressed="true"] {
+  color: var(--destaque-2);
+  border-color: rgba(240, 112, 91, 0.45);
+  background: rgba(240, 112, 91, 0.1);
+}
+
+.botao-legendas:focus-visible {
+  outline: 2px solid var(--destaque-2);
+  outline-offset: 2px;
+}
+
+/* Legendas desenhadas pelo player, por cima do vídeo. */
+.legendas {
+  position: absolute;
+  z-index: 2;
+  left: 18px;
+  right: 18px;
+  bottom: 64px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  transition: opacity 0.16s ease, visibility 0.16s ease;
+}
+
+.legendas--ocultas {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.legenda {
+  position: relative;
+  max-width: min(92%, 720px);
+  margin: 0;
+  padding: 11px 18px 11px 22px;
+  border: 1px solid rgba(254, 194, 135, 0.28);
+  border-radius: 11px;
+  background: linear-gradient(
+    135deg,
+    rgba(11, 15, 20, 0.94),
+    rgba(21, 29, 40, 0.9)
+  );
+  box-shadow:
+    0 14px 38px rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(10px);
+  color: #f8f4ec;
+  font-family: var(--fonte);
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: 0.005em;
+  text-align: center;
+  text-wrap: balance;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+.legenda::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--destaque-2), var(--destaque));
+  box-shadow: 0 0 10px rgba(240, 112, 91, 0.55);
+  transform-origin: top;
+}
+
+.legenda.entrando {
+  animation: legendaEntrar 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.legenda.entrando::before {
+  animation: legendaAcento 0.36s ease-out;
+}
+
+@keyframes legendaEntrar {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes legendaAcento {
+  from {
+    opacity: 0.3;
+    transform: scaleY(0.25);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@media (max-width: 820px) {
+  .legendas {
+    left: 10px;
+    right: 10px;
+    bottom: 58px;
+  }
+
+  .legenda {
+    max-width: 96%;
+    padding: 10px 14px 10px 18px;
+    font-size: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .legendas {
+    transition: none;
+  }
+
+  .legenda.entrando,
+  .legenda.entrando::before {
+    animation: none;
+  }
 }
 
 .saiba-rodape {

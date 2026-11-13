@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/style.css?v=20261112-3">
+  <link rel="stylesheet" href="/static/css/style.css?v=20261113-1">
 </head>
 <body class="pagina-saiba-mais">
   <header class="topo topo-saiba">
@@ -73,20 +73,32 @@
           <p class="sobre-rotulo">Vídeo explicativo</p>
           <h2 id="video-titulo">Do catálogo ao navegador</h2>
         </div>
-        <span class="video-duracao">2 min 18 s</span>
+        <div class="video-acoes">
+          <span class="video-duracao">2 min 18 s</span>
+          <button type="button" class="botao-legendas" id="btn-legendas"
+                  aria-pressed="true" hidden>
+            <span aria-hidden="true">CC</span> Legendas
+          </button>
+        </div>
       </div>
 
       <div class="video-moldura" id="video-moldura">
         <video id="video-explicativo" controls playsinline preload="metadata"
                aria-labelledby="video-titulo"
                poster="/static/videos/sismos-br-poster.jpg"
+               data-legendas="/static/videos/sismos-br.vtt?v=20261113-1"
                data-poster-desktop="/static/videos/sismos-br-poster-desktop.jpg"
                data-poster-mobile="/static/videos/sismos-br-poster.jpg"
                data-src-desktop="/static/videos/sismos-br-desktop.mp4"
                data-src-mobile="/static/videos/sismos-br-mobile.mp4">
-          <track kind="captions" src="/static/videos/sismos-br.vtt"
+          <track kind="captions" src="/static/videos/sismos-br.vtt?v=20261113-1"
                  srclang="pt" label="Português" default>
         </video>
+        <div class="legendas legendas--ocultas" id="legendas"
+             role="region" aria-label="Legendas do vídeo"
+             aria-live="polite" aria-atomic="true">
+          <p class="legenda" id="legenda"></p>
+        </div>
       </div>
 
       <p class="video-nota">
@@ -111,6 +123,6 @@
     </p>
   </footer>
 
-  <script src="/static/js/saiba-mais.js?v=20261112-3"></script>
+  <script src="/static/js/saiba-mais.js?v=20261113-1"></script>
 </body>
 </html>
