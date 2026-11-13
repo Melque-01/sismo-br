@@ -222,6 +222,10 @@
     ).addTo(estado.mapa);
 
     L.control.scale({ imperial: false }).addTo(estado.mapa);
+
+    window.addEventListener("resize", function () {
+      if (estado.mapa) estado.mapa.invalidateSize();
+    });
   }
 
   function cortesDeValores(valores) {
