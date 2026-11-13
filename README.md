@@ -149,7 +149,7 @@ Testes de banco são pulados por padrão; na VM:
 SISMOS_TESTAR_DB=1 python -m unittest discover -s tests -v
 ```
 
-## Estado atual da publicação (12/11/2026)
+## Estado atual da publicação (13/11/2026)
 
 - Servidor SSH `melque@<host-do-servidor>:2222` (Ubuntu 24.04 em container, sem
   systemd; Docker não consegue criar namespaces nesse host).
