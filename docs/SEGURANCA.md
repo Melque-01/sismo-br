@@ -1,7 +1,7 @@
 # Auditoria de segurança — 12/11/2026
 
 Escopo: aplicação Sismos BR publicada em
-`<tunel-efemero>`, código local e servidor
+`https://sismos-br.duckdns.org`, código local e servidor
 `melque@<host-do-servidor>:2222`.
 
 Método: revisão de código + Semgrep (12 rulesets) + testes dinâmicos na URL

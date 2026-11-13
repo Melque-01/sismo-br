@@ -22,7 +22,8 @@ Este é o runbook do ambiente que está servindo o site agora.
 | Aplicação | `/home/melque/sismos-br`, venv, `python app.py` na 8080 |
 | Túnel público | binário `cloudflared`, `--protocol http2`, log em `tunnel.log` |
 
-- URL pública atual: `<tunel-efemero>`
+- URL pública estável: `https://sismos-br.duckdns.org` (nginx + TLS no host).
+- Túnel rápido Cloudflare (alternativa): `<tunel-efemero>` — muda se o `cloudflared` reiniciar.
 - Banco: `sismos_br`, usuário `sismos_br`, senha em `/home/melque/sismos-br/.env` (modo 600).
 - Dados: **5.141 eventos** (5.044 SISBRA + 97 FDSN), 27 UFs, 0 fora da malha.
 - Endpoint local no host: `http://127.0.0.1:8080`; acesso público é pelo túnel.

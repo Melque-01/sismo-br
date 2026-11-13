@@ -155,8 +155,10 @@ SISMOS_TESTAR_DB=1 python -m unittest discover -s tests -v
   systemd; Docker não consegue criar namespaces nesse host).
 - PostgreSQL 16.15 + PostGIS 3.4.2; app Python 3.12.3 em
   `/home/melque/sismos-br`, porta 8080.
-- Túnel público: `<tunel-efemero>`
-  (URL temporária — muda se o `cloudflared` reiniciar).
+- URL pública estável: `https://sismos-br.duckdns.org` (nginx + TLS no host).
+- Túnel rápido Cloudflare (alternativa temporária):
+  `<tunel-efemero>` — muda se o
+  `cloudflared` reiniciar.
 - Base: **5.141 eventos** no recorte do Brasil (5.044 SISBRA + 97 FDSN).
 - Docker Compose (`db`, `app`, `cloudflared`) foi construído e testado no
   Docker Desktop local; containers locais foram parados. A imagem não está
