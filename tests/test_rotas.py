@@ -36,10 +36,10 @@ class TestRotas(unittest.TestCase):
         self.assertIn("sismos-br-desktop.mp4", html)
         self.assertIn("O que é o Sismos BR", html)
 
-    def test_index_tem_botao_saiba_mais(self):
+    def test_index_sem_botao_saiba_mais(self):
         status, _, corpo = home_controle.index({})
         self.assertEqual(status, 200)
-        self.assertIn(b'href="/saiba-mais"', corpo)
+        self.assertNotIn(b'class="botao-saiba-mais"', corpo)
 
     def test_filtro_invalido_vira_400(self):
         status, cabecalhos, corpo = sismo_controle.api_densidade({"celula": "0.3"})
