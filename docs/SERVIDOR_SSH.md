@@ -13,22 +13,21 @@ Este é o runbook do ambiente que está servindo o site agora.
 | Host | `<usuario>@<host-do-servidor>` porta `2222` (chave SSH) |
 | Sistema | Ubuntu 24.04.5 LTS, **container** (PID 1 = sshd) |
 | Recursos observados | 7,7 GB RAM; disco de 58 GB (43 GB livres na última checagem) |
-| Python | 3.12.3; venv em `/home/melque/sismos-br/.venv` |
+| Python | 3.12.3; venv em `/home/<usuario>/sismos-br/.venv` |
 | PostgreSQL / PostGIS | PostgreSQL 16.15 / PostGIS 3.4.2 |
 | Limitações | sem systemd; Docker CLI instalado, mas daemon/container bloqueado por falta de namespaces/permissões |
-| Acesso | `sudo` sem senha para o usuário `melque` |
+| Acesso | `sudo` sem senha para o usuário `<usuario>` |
 
 ## O que está rodando
 
 | Componente | Como |
 |---|---|
 | PostgreSQL 16 + PostGIS 3.4 | cluster `16/main`, iniciado com `pg_ctlcluster` |
-| Aplicação | `/home/melque/sismos-br`, venv, `python app.py` na 8080 |
+| Aplicação | `/home/<usuario>/sismos-br`, venv, `python app.py` na 8080 |
 | Túnel público | binário `cloudflared`, `--protocol http2`, log em `tunnel.log` |
 
 - URL pública estável: `https://sismos-br.duckdns.org` (nginx + TLS no host).
-- Túnel rápido Cloudflare (alternativa): `<tunel-efemero>` — muda se o `cloudflared` reiniciar.
-- Banco: `sismos_br`, usuário `sismos_br`, senha em `/home/melque/sismos-br/.env` (modo 600).
+- Banco: `sismos_br`, usuário `sismos_br`, senha em `/home/<usuario>/sismos-br/.env` (modo 600).
 - Dados: **5.141 eventos** (5.044 SISBRA + 97 FDSN), 27 UFs, 0 fora da malha.
 - Endpoint local no host: `http://127.0.0.1:8080`; acesso público é pelo túnel.
 - Portas do banco (5432) não são publicadas pelo túnel.
@@ -59,27 +58,27 @@ navegador → Cloudflare Tunnel (HTTP/2) → cloudflared
 ```bash
 # estado
 ssh -p 2222 <usuario>@<host-do-servidor>
-cd /home/melque/sismos-br
+cd /home/<usuario>/sismos-br
 bash scripts/status_servidor.sh
 
 # iniciar qualquer componente parado (banco, app, túnel)
-bash /home/melque/sismos-br/scripts/start_servidor.sh
+bash /home/<usuario>/sismos-br/scripts/start_servidor.sh
 
 # reiniciar app e túnel se necessário
 pkill -f '[p]ython app.py' || true
 pkill -f '[c]loudflared tunnel' || true
-bash /home/melque/sismos-br/scripts/start_servidor.sh
+bash /home/<usuario>/sismos-br/scripts/start_servidor.sh
 
 # atualizar só o FDSN
-cd /home/melque/sismos-br
+cd /home/<usuario>/sismos-br
 .venv/bin/python scripts/importar_catalogo.py --somente fdsn
 
 # logs
-tail -f /home/melque/sismos-br/app.log
-tail -f /home/melque/sismos-br/tunnel.log
+tail -f /home/<usuario>/sismos-br/app.log
+tail -f /home/<usuario>/sismos-br/tunnel.log
 
 # backup do banco (cria arquivo na home do usuário)
-cd /home/melque/sismos-br
+cd /home/<usuario>/sismos-br
 set -a; . ./.env; set +a
 PGPASSWORD="$DB_PASSWORD" pg_dump -h 127.0.0.1 -U sismos_br -Fc sismos_br \
   > "$HOME/sismos_br_$(date +%F).dump"
@@ -103,13 +102,13 @@ O host não tem systemd: **se o container/host reiniciar, PostgreSQL, app e tún
 não sobem sozinhos**. Depois de qualquer reinício, entre por SSH e rode:
 
 ```bash
-bash /home/melque/sismos-br/scripts/start_servidor.sh
+bash /home/<usuario>/sismos-br/scripts/start_servidor.sh
 ```
 
 ### Subida automática (wrapper do sshd)
 
 Desde 12/11/2026, `/usr/sbin/sshd` no container é um wrapper: no boot ele roda
-`start_servidor.sh` como `melque` (log em `/home/melque/sismos-br/boot.log`) e
+`start_servidor.sh` como `<usuario>` (log em `/home/<usuario>/sismos-br/boot.log`) e
 depois exec o sshd real (`/usr/sbin/sshd.real`). Ou seja: **os serviços sobem
 sozinhos quando o container reinicia** — o manual acima virou fallback. A URL
 do túnel rápido ainda muda a cada subida; consulte `boot.log` ou o
@@ -118,9 +117,9 @@ do túnel rápido ainda muda a cada subida; consulte `boot.log` ou o
 ### Acesso SSH
 
 SSH no container exige **chave** (`PasswordAuthentication no`, `X11Forwarding
-no`, `AllowUsers melque`). Os drop-ins ficam em `/etc/ssh/sshd_config.d/`
-(`00-melque-password.conf`, `99-melque.conf`), com backup em
-`/home/melque/ssh-backup/`. O `sudo` do `melque` segue sem senha porque
+no`, `AllowUsers <usuario>`). Os drop-ins ficam em `/etc/ssh/sshd_config.d/`
+(`00-<usuario>-password.conf`, `99-<usuario>.conf`), com backup em
+`/home/<usuario>/ssh-backup/`. O `sudo` do `<usuario>` segue sem senha porque
 `start_servidor.sh` precisa dele.
 
 A URL do túnel rápido muda quando `cloudflared` reinicia; o script imprime a

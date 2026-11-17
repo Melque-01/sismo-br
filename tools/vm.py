@@ -6,8 +6,8 @@ Uso:
     python tools/vm.py put arquivo_local /caminho/remoto
     python tools/vm.py get /caminho/remoto arquivo_local
 
-Credenciais por variável de ambiente (ou padrão do projeto):
-    VM_HOST=127.0.0.1 VM_USER=melque VM_PASS=...
+Credenciais por variável de ambiente:
+    VM_HOST=<host> VM_PORT=22 VM_USER=<usuario> VM_PASS=...  (ou VM_KEY=chave)
 """
 
 import os
@@ -17,7 +17,7 @@ import paramiko
 
 HOST = os.getenv("VM_HOST", "127.0.0.1")
 PORTA = int(os.getenv("VM_PORT", "22"))
-USUARIO = os.getenv("VM_USER", "melque")
+USUARIO = os.getenv("VM_USER", "")
 SENHA = os.getenv("VM_PASS", "")
 CHAVE = os.getenv("VM_KEY", "")
 

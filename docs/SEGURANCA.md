@@ -41,14 +41,14 @@ rate limit global e SSH com senha + sudo sem senha.
 - **Correção:** usar `CF-Connecting-IP` (confiando apenas no túnel) como chave
   do limite; limitar também por conta/e-mail; aplicar backoff progressivo.
 
-### A3. SSH aceita senha e `melque` tem sudo sem senha
-- **Evidência:** `sshd -T` → `passwordauthentication yes`; `passwd -S melque`
+### A3. SSH aceita senha e `<usuario>` tem sudo sem senha
+- **Evidência:** `sshd -T` → `passwordauthentication yes`; `passwd -S <usuario>`
   → `P` (senha definida); `sudo -n -l` → `(ALL) NOPASSWD: ALL`. `PermitRootLogin
   no` está correto.
 - **Impacto:** se a senha for fraca (ou vazar), o atacante entra por SSH e vira
   root sem segunda barreira. O SSH está exposto na porta 2222.
 - **Correção:** `PasswordAuthentication no`, `X11Forwarding no`,
-  `AllowUsers melque`; remover `NOPASSWD` ou restringir os comandos; manter
+  `AllowUsers <usuario>`; remover `NOPASSWD` ou restringir os comandos; manter
   apenas chave, com senha forte na chave.
 
 ## Achados médios
@@ -63,9 +63,9 @@ rate limit global e SSH com senha + sudo sem senha.
   `no-referrer`, `Permissions-Policy` restritiva; CSP com nonce/hash; HSTS.
 
 ### M2. Cadastro aberto, sem verificação de e-mail e com enumeração
-- **Evidência:** `/registrar` cria conta e já autentica; e-mail existente
-  responde **409** (“já cadastrado”). Existem 2 contas no banco, uma delas
-  `usuario@exemplo.com`, criada fora dos testes.
+- **Evidência:** `/registrar` cria conta e já autentica; a resposta para
+  e-mail existente distingue e-mails que já têm conta. Existem contas reais
+  criadas fora dos testes.
 - **Impacto:** contas falsas/spam e descoberta de quais e-mails têm conta.
 - **Correção:** verificação por e-mail ou código de convite; resposta genérica
   no cadastro; limite por e-mail além do IP.
@@ -110,7 +110,7 @@ rate limit global e SSH com senha + sudo sem senha.
   8080 fechadas externamente; apenas 22 exposta.
 - Segredos: `.env` modo 600; nenhum segredo real no Git (o `.env.vm` antigo
   tinha só placeholder); `pip-audit` sem vulnerabilidades conhecidas.
-- Servidor: `PermitRootLogin no`; app roda como `melque`, não root.
+- Servidor: `PermitRootLogin no`; app roda como `<usuario>`, não root.
 
 ## Semgrep
 
@@ -157,8 +157,8 @@ rate limit global e SSH com senha + sudo sem senha.
   (`LIMITE_CHAVES`) para não crescerem com e-mails aleatórios. Efeito colateral
   aceito: um atacante pode bloquear uma conta conhecida por 15 minutos.
 - **A3 resolvido** — `PasswordAuthentication no`, `X11Forwarding no`,
-  `AllowUsers melque` (drop-ins em `/etc/ssh/sshd_config.d/`, backup em
-  `/home/melque/ssh-backup/`). O `NOPASSWD` do sudo foi mantido de propósito:
+  `AllowUsers <usuario>` (drop-ins em `/etc/ssh/sshd_config.d/`, backup em
+  `/home/<usuario>/ssh-backup/`). O `NOPASSWD` do sudo foi mantido de propósito:
   `start_servidor.sh` precisa dele e o root do container não é o root do host.
 - **M1 parcial** — `nosniff`, `X-Frame-Options: DENY`,
   `Referrer-Policy: no-referrer`, `Permissions-Policy` e HSTS em todas as
@@ -170,7 +170,7 @@ rate limit global e SSH com senha + sudo sem senha.
   na validação; POST sem token responde 403 e logout inválido não apaga a
   sessão.
 - **B2 resolvido** — `evento_id` do SISBRA agora é SHA-256 (64 hex). A
-  tabela foi reimportada (backup em `/home/melque/sismos_antes_b2.sql`);
+  tabela foi reimportada (backup em `/home/<usuario>/sismos_antes_b2.sql`);
   contagem inalterada: 5.044 SISBRA + 97 FDSN.
 - **B4 resolvido** — `Cache-Control: no-store` em `/api/*`, `/login` e
   `/registrar`.
