@@ -15,4 +15,4 @@ Verificação do Sismos BR. Siga na ordem.
    - `try { (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8000/api/status -TimeoutSec 3).StatusCode } catch { "fora do ar" }`
 6. Relate: total de testes, falhas, erros e pulados; diga explicitamente se os testes de banco rodaram ou não.
 
-Sem commit, push, SSH (`<host-do-servidor>:2222`) ou deploy sem autorização explícita. Não alterar `SESSION_SECRET`, cookies ou hashing de senha para "facilitar teste".
+Sem commit, push, SSH (ver `docs/LOCAL_NOTAS.md`) ou deploy sem autorização explícita. Não alterar `SESSION_SECRET`, cookies ou hashing de senha para "facilitar teste".

@@ -2,11 +2,15 @@
 
 Este é o runbook do ambiente que está servindo o site agora.
 
+> **Nota:** host, usuário e paths reais ficam em `docs/LOCAL_NOTAS.md`
+> (arquivo local, fora do Git). Este documento usa os placeholders
+> `<host-do-servidor>` e `<usuario>`.
+
 ## O que é esse host
 
 | Item | Valor |
 |---|---|
-| Host | `melque@<host-do-servidor>` porta `2222` (chave SSH) |
+| Host | `<usuario>@<host-do-servidor>` porta `2222` (chave SSH) |
 | Sistema | Ubuntu 24.04.5 LTS, **container** (PID 1 = sshd) |
 | Recursos observados | 7,7 GB RAM; disco de 58 GB (43 GB livres na última checagem) |
 | Python | 3.12.3; venv em `/home/melque/sismos-br/.venv` |
@@ -54,7 +58,7 @@ navegador → Cloudflare Tunnel (HTTP/2) → cloudflared
 
 ```bash
 # estado
-ssh -p 2222 melque@<host-do-servidor>
+ssh -p 2222 <usuario>@<host-do-servidor>
 cd /home/melque/sismos-br
 bash scripts/status_servidor.sh
 
@@ -87,7 +91,7 @@ Os MP4s não entram no Git. Depois de gerar ou atualizar:
 
 ```bash
 scp -P 2222 static/videos/*.mp4 static/videos/*.vtt static/videos/*.jpg \
-  melque@<host-do-servidor>:/home/melque/sismos-br/static/videos/
+  <usuario>@<host-do-servidor>:/home/<usuario>/sismos-br/static/videos/
 ```
 
 O app serve `/static/videos/...` com suporte a `Range`, então o player

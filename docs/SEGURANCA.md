@@ -2,7 +2,7 @@
 
 Escopo: aplicação Sismos BR publicada em
 `https://sismos-br.duckdns.org`, código local e servidor
-`melque@<host-do-servidor>:2222`.
+`<usuario>@<host-do-servidor>:2222`.
 
 Método: revisão de código + Semgrep (12 rulesets) + testes dinâmicos na URL
 pública + inspeção do servidor + `pip-audit`. Nenhum teste destrutivo; os testes

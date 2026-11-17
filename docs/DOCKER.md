@@ -22,7 +22,7 @@ sem eles ninguém consegue entrar no site.
 - Docker Engine + Compose plugin.
 - Host com `systemd` (VM ou servidor dedicado). **Não funciona dentro de
   container sem privilégios** (sem `CAP_SYS_ADMIN`, sem systemd), como o
-  servidor `<servidor>` em `<host-do-servidor>:2222`.
+  servidor `<host-do-servidor>:2222`.
 
 ## Subir
 

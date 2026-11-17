@@ -22,5 +22,5 @@
 
 ## Deploy
 
-- SSH `<host-do-servidor>:2222`; sem deploy ou restart sem autorização.
+- SSH do servidor em `docs/LOCAL_NOTAS.md` (fora do Git); sem deploy ou restart sem autorização.
 - Backup do Postgres antes de migração ou importação grande.

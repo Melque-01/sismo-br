@@ -1,12 +1,42 @@
 # Sismos BR — densidade de epicentros no Brasil
 
+[![Python](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org)
+[![PostGIS](https://img.shields.io/badge/PostGIS-3.4-24485E)](https://postgis.net)
+[![Testes](https://img.shields.io/badge/testes-168%20passando-2EA043)](#testes)
+[![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-blue)](LICENSE)
+
+**🔗 Site no ar:** <https://sismos-br.duckdns.org> ·
+**📄 Por trás dos panos (PDF técnico):**
+[docs/Sismos_BR_por_tras_dos_panos.pdf](docs/Sismos_BR_por_tras_dos_panos.pdf)
+
+![Painel do Sismos BR com o mapa de densidade](docs/assets/dashboard.png)
+
 Trabalho de faculdade: mapa interativo da densidade de epicentros no território
 brasileiro a partir do catálogo histórico do **SISBRA/RSBR** (1690–2023) e do
 catálogo **FDSN do Moho/IAG-USP** (2024 em diante).
 
+## Destaques técnicos
+
+- **Servidor HTTP próprio (só stdlib)**: roteamento por tabela, cookies,
+  statics com suporte a Range e headers de segurança — sem framework, cada
+  decisão é visível no código.
+- **Densidade calculada no PostGIS**: grade alinhada por `floor`, área real
+  em km² via `geography` (células de latitudes diferentes ficam comparáveis)
+  e cortes de cor dinâmicos.
+- **Segurança implementada e testada**: senhas em PBKDF2-HMAC-SHA256 (260 mil
+  iterações + salt por usuário), sessão em cookie assinado com HMAC-SHA256,
+  CSRF por duplo envio e limites anti força bruta.
+- **Importação idempotente**: catálogos SISBRA + FDSN normalizados por parsers
+  próprios, upsert por `(fonte, evento_id)` e recorte pela malha do IBGE.
+- **Deploy real**: nginx + TLS, Cloudflare Tunnel e PostgreSQL/PostGIS no host,
+  com backup `pg_dump`.
+- **168 testes** unitários e de integração (incluem tentativas de path
+  traversal e rate limit).
+
 Aplicação em **Python puro, no padrão MVC, sem framework web** — mesma
-arquitetura do projeto Geo Buss. Está publicada no servidor SSH
-`<host-do-servidor>:2222`, com PostgreSQL/PostGIS, processo Python e Cloudflare
+arquitetura do projeto Geo Buss. Está publicada no servidor SSH `<host-do-servidor>`, com
+PostgreSQL/PostGIS, processo Python e Cloudflare
 Tunnel. A stack Docker também foi testada, mas não roda no servidor atual por
 restrições do container.
 
@@ -123,7 +153,7 @@ versionados. Para publicar no servidor:
 
 ```bash
 scp -P 2222 static/videos/*.mp4 static/videos/*.vtt static/videos/*.jpg \
-  melque@<host-do-servidor>:/home/melque/sismos-br/static/videos/
+  <usuario>@<host-do-servidor>:/home/<usuario>/sismos-br/static/videos/
 ```
 
 ## Importar os catálogos
@@ -151,7 +181,7 @@ SISMOS_TESTAR_DB=1 python -m unittest discover -s tests -v
 
 ## Estado atual da publicação (13/11/2026)
 
-- Servidor SSH `melque@<host-do-servidor>:2222` (Ubuntu 24.04 em container, sem
+- Servidor SSH `<usuario>@<host-do-servidor>:2222` (Ubuntu 24.04 em container, sem
   systemd; Docker não consegue criar namespaces nesse host).
 - PostgreSQL 16.15 + PostGIS 3.4.2; app Python 3.12.3 em
   `/home/melque/sismos-br`, porta 8080.

@@ -9,4 +9,6 @@ dados/brutos/
 videos/*.mp4
 static/videos/*.mp4
 static_analysis_semgrep_1/
+docs/LOCAL_NOTAS.md
+docs/superpowers/
 
