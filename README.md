@@ -34,6 +34,8 @@ catálogo **FDSN do Moho/IAG-USP** (2024 em diante).
 - **168 testes** unitários e de integração (incluem tentativas de path
   traversal e rate limit).
 
+<video src="docs/assets/sismos-br-demo.mp4" controls muted loop playsinline width="920"></video>
+
 Aplicação em **Python puro, no padrão MVC, sem framework web** — mesma
 arquitetura do projeto Geo Buss. Está publicada no servidor SSH `<host-do-servidor>`, com
 PostgreSQL/PostGIS, processo Python e Cloudflare
