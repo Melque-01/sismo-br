@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: pip install ruff
+      - run: ruff check .
+      - run: python -m unittest discover -s tests
+
+  testes-com-banco:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: sismos_br
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_ci
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-retries 12
+    env:
+      SISMOS_TESTAR_DB: "1"
+      DB_HOST: "127.0.0.1"
+      DB_PORT: "5432"
+      DB_NAME: sismos_br
+      DB_USER: postgres
+      DB_PASSWORD: postgres_ci
+      HOST: "127.0.0.1"
+      SESSION_SECRET: "segredo-de-ci"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Aplicar schema (extensão PostGIS inclusa)
+        run: |
+          PGPASSWORD=postgres_ci psql -h 127.0.0.1 -U postgres -d sismos_br \
+            -f db/schema.sql
+      - run: python -m unittest discover -s tests

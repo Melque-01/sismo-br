@@ -144,7 +144,7 @@ class Manipulador(BaseHTTPRequestHandler):
 
         try:
             status, cabecalhos_resposta, corpo = funcao(dados)
-        except Exception as erro:  # noqa: BLE001 - falha inesperada vira 500
+        except Exception:  # noqa: BLE001 - falha inesperada vira 500
             traceback.print_exc()
             return self._enviar(
                 *respostas.json_resposta({"erro": "erro interno"}, 500)
@@ -340,6 +340,12 @@ class Manipulador(BaseHTTPRequestHandler):
 
 
 def main():
+    problemas = config.avisos_de_prod()
+    if problemas:
+        raise SystemExit(
+            "Configuração insegura para servidor exposto:\n- "
+            + "\n- ".join(problemas)
+        )
     if not config.LOGIN_EMAIL or not config.LOGIN_SENHA:
         print(
             "AVISO: LOGIN_EMAIL/LOGIN_SENHA não configurados. O site exige "

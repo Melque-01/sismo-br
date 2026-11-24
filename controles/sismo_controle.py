@@ -1,6 +1,9 @@
 """Controller das consultas de sismos: validação central dos filtros e API."""
 
+import threading
+import time
 import traceback
+from collections import OrderedDict
 from datetime import date
 from typing import Dict, Mapping, Optional
 
@@ -11,6 +14,60 @@ from servicos.catalogo import CATEGORIAS_SISBRA
 
 FONTES = ("todas", "SISBRA", "FDSN")
 METRICAS = ("contagem", "normalizada")
+
+# Catálogo só muda quando a importação roda (processo separado). As respostas
+# agregadas por filtro são deterministicas nesse meio-tempo: cache de processo
+# validado pela versão do banco (modelo.sismo.versao_dados).
+TTL_CACHE_S = 60.0
+LIMITE_CACHE = 64
+_TRAVA_CACHE = threading.Lock()
+_CACHE = OrderedDict()
+
+
+def _com_cache(dados, calcular, ttl=TTL_CACHE_S, rotulo=""):
+    """Resposta de API com cache in-process invalidado pela versão dos dados.
+
+    `rotulo` distingue os endpoints (densidade/sismos/estatisticas usam os
+    mesmos filtros — sem o rótulo, uma resposta contaminaria a outra).
+    Chaves iniciadas em "_" (metadata do request, ex.: `_cookies`) ficam
+    fora da chave: variam por usuário e nunca afetam o resultado.
+    """
+    chave = (
+        rotulo,
+        tuple(
+            sorted(
+                (nome, str(valor))
+                for nome, valor in dados.items()
+                if not nome.startswith("_")
+            )
+        ),
+    )
+    versao = modelo_sismo.versao_dados()
+    agora = time.monotonic()
+
+    with _TRAVA_CACHE:
+        entrada = _CACHE.get(chave)
+        if entrada and entrada[0] > agora and entrada[1] == versao:
+            _CACHE.move_to_end(chave)
+            return (
+                200,
+                {
+                    "content-type": "application/json; charset=utf-8",
+                    "cache-control": "private, max-age={}".format(int(ttl)),
+                },
+                entrada[2],
+            )
+        if entrada:
+            del _CACHE[chave]
+
+    status, cabecalhos, corpo = _resposta_api(calcular)
+    if status == 200:
+        with _TRAVA_CACHE:
+            _CACHE[chave] = (agora + ttl, versao, corpo)
+            _CACHE.move_to_end(chave)
+            if len(_CACHE) > LIMITE_CACHE:
+                _CACHE.popitem(last=False)
+    return status, cabecalhos, corpo
 
 
 class ErroValidacao(Exception):
@@ -276,7 +333,7 @@ def api_densidade(dados):
             },
         }
 
-    return _resposta_api(calcular)
+    return _com_cache(dados, calcular, rotulo="densidade")
 
 
 def api_sismos(dados):
@@ -296,7 +353,7 @@ def api_sismos(dados):
             },
         }
 
-    return _resposta_api(calcular)
+    return _com_cache(dados, calcular, rotulo="sismos")
 
 
 def api_celula(dados):
@@ -343,7 +400,7 @@ def api_estatisticas(dados):
         filtros = montar_filtros(dados)
         return {"ok": True, **modelo_sismo.estatisticas(filtros)}
 
-    return _resposta_api(calcular)
+    return _com_cache(dados, calcular, rotulo="estatisticas")
 
 
 def api_filtros(dados):

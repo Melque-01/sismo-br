@@ -154,6 +154,52 @@ def _condicao_extra(where: str, condicao: str) -> str:
     return where + " AND " + condicao if where else " WHERE " + condicao
 
 
+LARGURA_HISTOGRAMA = 0.5  # mesmas faixas de servicos.estatistica.histograma
+
+
+def _histograma_magnitude(linhas):
+    """Monta as faixas do histograma a partir das agregações do SQL.
+
+    O Postgres já conta por faixa (floor(magnitude/0.5)*0.5); aqui só
+    normalizamos a saída para o mesmo formato de `estatistica.histograma`.
+    """
+    resultado = []
+    for linha in linhas:
+        inicio = round(float(linha["inicio"]), 6)
+        resultado.append(
+            {
+                "de": inicio,
+                "ate": round(inicio + LARGURA_HISTOGRAMA, 6),
+                "n": int(linha["n"]),
+            }
+        )
+    return resultado
+
+
+def versao_dados():
+    """Assinatura barata do catálogo (invalida caches de processo do servidor).
+
+    Usa `max(id)` (O(1) pela PK) e a última importação (índice existente) —
+    um `count(*)` por request custaria mais que o próprio cache economiza.
+    Qualquer importação muda a assinatura. Em falha de banco devolve
+    "desconhecida" — o cache simplesmente não é usado.
+    """
+    try:
+        linha = database.consultar_um(
+            """
+            SELECT coalesce(max(id), 0)::text AS maior,
+                   (SELECT coalesce(max(iniciado_em)::text, '')
+                      FROM importacoes) AS ultima
+            FROM sismos
+            """
+        )
+    except Exception:  # noqa: BLE001 - sem banco não há versão confiável
+        return "desconhecida"
+    if not linha:
+        return "desconhecida"
+    return "{maior}:{ultima}".format(maior=linha["maior"], ultima=linha["ultima"])
+
+
 def _celula(f: Dict[str, object], celula: Optional[float]) -> float:
     """Tamanho de célula pedido, caindo no filtro validado."""
     return float(celula if celula is not None else f["celula"])
@@ -390,8 +436,10 @@ def estatisticas(f: Dict[str, object]) -> Dict[str, object]:
 
     magnitudes = database.consultar(
         """
-        SELECT magnitude
+        SELECT floor(magnitude / 0.5) * 0.5 AS inicio, count(*) AS n
         FROM sismos{where}
+        GROUP BY inicio
+        ORDER BY inicio
         """.format(where=_condicao_extra(where, "magnitude IS NOT NULL")),
         tuple(parametros),
     )
@@ -411,9 +459,7 @@ def estatisticas(f: Dict[str, object]) -> Dict[str, object]:
         "serie_anual": [
             {"ano": int(linha["ano"]), "n": int(linha["n"])} for linha in serie_anual
         ],
-        "histograma_magnitude": estatistica.histograma(
-            [linha["magnitude"] for linha in magnitudes]
-        ),
+        "histograma_magnitude": _histograma_magnitude(magnitudes),
         "profundidade_mediana": (
             round(float(resumo["profundidade_mediana"]), 2)
             if resumo["profundidade_mediana"] is not None

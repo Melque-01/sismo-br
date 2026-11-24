@@ -1,0 +1,17 @@
+# Ruff — baseline do projeto: erros de correção (E/F/W). Estilo não é bloqueante.
+line-length = 99
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "W"]
+
+[lint.pycodestyle]
+max-line-length = 99
+
+[lint.per-file-ignores]
+# Geradores de documentação: tabelas e strings longas de propósito,
+# sys.path ajustado antes de importar o app.
+"docs/*" = ["E501"]
+"tools/*" = ["E501", "E402", "F841"]
+# Fixture de catálogo FDSN em colunas fixas (texto bruto do serviço).
+"tests/test_catalogo_fdsn.py" = ["E501"]

@@ -7,7 +7,7 @@ from typing import Dict, Mapping
 import config
 from controles import respostas
 from modelo import usuario as usuario_modelo
-from servicos import senhas, sessoes
+from servicos import limites, senhas, sessoes
 
 # Proteção simples contra força bruta: 5 falhas por IP em 5 minutos.
 LIMITE_FALHAS = 5
@@ -50,10 +50,12 @@ def _registrar_falha(ip: str, email: str) -> None:
     agora = time.time()
     _FALHAS.setdefault(ip, []).append(agora)
     _podar(_FALHAS)
+    limites.registrar("falha_ip", ip)
     chave = usuario_modelo.normalizar_email(email)
     if chave:
         _FALHAS_CONTA.setdefault(chave, []).append(agora)
         _podar(_FALHAS_CONTA)
+        limites.registrar("falha_conta", chave)
 
 
 def _podar(registro: Dict[str, list]) -> None:
@@ -69,6 +71,9 @@ def conta_bloqueada(email: str) -> bool:
     chave = usuario_modelo.normalizar_email(email)
     if not chave:
         return False
+    no_banco = limites.contar("falha_conta", chave, JANELA_CONTA_SEGUNDOS)
+    if no_banco is not None:
+        return no_banco >= LIMITE_CONTA
     return (
         len(_recentes(_FALHAS_CONTA, chave, JANELA_CONTA_SEGUNDOS))
         >= LIMITE_CONTA
@@ -76,19 +81,28 @@ def conta_bloqueada(email: str) -> bool:
 
 
 def _limpar_falhas_conta(email: str) -> None:
-    _FALHAS_CONTA.pop(usuario_modelo.normalizar_email(email), None)
+    chave = usuario_modelo.normalizar_email(email)
+    _FALHAS_CONTA.pop(chave, None)
+    limites.limpar("falha_conta", chave)
 
 
 def bloqueado(ip: str) -> bool:
+    no_banco = limites.contar("falha_ip", ip, JANELA_SEGUNDOS)
+    if no_banco is not None:
+        return no_banco >= LIMITE_FALHAS
     return len(_recentes(_FALHAS, ip, JANELA_SEGUNDOS)) >= LIMITE_FALHAS
 
 
 def _cadastro_bloqueado(ip: str) -> bool:
+    no_banco = limites.contar("cadastro", ip, JANELA_CADASTRO)
+    if no_banco is not None:
+        return no_banco >= LIMITE_CADASTROS
     return len(_recentes(_CADASTROS, ip, JANELA_CADASTRO)) >= LIMITE_CADASTROS
 
 
 def _registrar_cadastro(ip: str) -> None:
     _CADASTROS.setdefault(ip, []).append(time.time())
+    limites.registrar("cadastro", ip)
 
 
 def autenticar(email: str, senha: str) -> bool:

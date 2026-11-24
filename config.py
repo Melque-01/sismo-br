@@ -78,6 +78,40 @@ LOGIN_SENHA = os.getenv("LOGIN_SENHA", "")
 SEGREDO_SESSAO = os.getenv("SESSION_SECRET", "")
 SESSAO_TTL = int(os.getenv("SESSION_TTL", "43200"))  # 12 horas
 
+# Senha embutida como fallback local — nunca pode valer em servidor exposto.
+SENHA_BANCO_PADRAO = "sismos_br"
+
+
+def avisos_de_prod(host=None):
+    """Problemas que impedem de expor o servidor fora do localhost.
+
+    Servidor publicado (HOST fora do loopback) exige segredo de sessão,
+    senha própria do banco e login configurado. Devolve a lista de
+    problemas; lista vazia = pode subir.
+    """
+    host = host or HOST
+    if host in ("127.0.0.1", "localhost", "::1"):
+        return []
+
+    problemas = []
+    if not os.getenv("SESSION_SECRET", ""):
+        problemas.append(
+            "SESSION_SECRET não definido: defina no .env (as sessões ficam "
+            "inválidas a cada reinício e o cookie fica previsível)."
+        )
+    senha_banco = os.getenv("DB_PASSWORD", "") or SENHA_BANCO_PADRAO
+    if senha_banco == SENHA_BANCO_PADRAO:
+        problemas.append(
+            "DB_PASSWORD ausente ou com a senha padrão: defina uma senha "
+            "própria no .env."
+        )
+    if not os.getenv("LOGIN_SENHA", ""):
+        problemas.append(
+            "LOGIN_SENHA não definida: o login ficaria desabilitado no "
+            "servidor público."
+        )
+    return problemas
+
 # --- Caminhos -------------------------------------------------------------
 PASTA_DADOS = RAIZ / "dados"
 PASTA_BRUTOS = PASTA_DADOS / "brutos"

@@ -47,6 +47,23 @@ CREATE TABLE IF NOT EXISTS importacoes (
 
 CREATE INDEX IF NOT EXISTS importacoes_iniciado_em_idx ON importacoes (iniciado_em DESC);
 
+-- Janelas de rate limit (força bruta). Sobrevivem a reinício do processo.
+CREATE TABLE IF NOT EXISTS limites (
+    tipo       TEXT        NOT NULL,
+    chave      TEXT        NOT NULL,
+    criado_em  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS limites_busca_idx ON limites (tipo, chave, criado_em DESC);
+
+-- Segredo de sessão quando SESSION_SECRET não está no .env (roda no host, sem
+-- .env gerenciado): guardado no banco para o cookie sobreviver a reinícios.
+CREATE TABLE IF NOT EXISTS segredos (
+    chave      TEXT PRIMARY KEY,
+    valor      TEXT NOT NULL,
+    criado_em  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS usuarios (
     id          BIGSERIAL PRIMARY KEY,
     email       TEXT NOT NULL UNIQUE,

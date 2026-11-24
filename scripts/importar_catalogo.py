@@ -201,6 +201,9 @@ def main(argv=None):
     if falhou:
         return 1
 
+    from servicos import limites
+
+    limites.podar()  # manutenção das janelas de rate limit (vencidos)
     total = database.consultar_um("SELECT count(*) AS n FROM sismos")
     print("Total no banco: {} eventos.".format(total["n"]))
     return 0

@@ -39,7 +39,12 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:latest
-    command: tunnel --no-autoupdate --protocol http2 --url http://app:8080
+    # Túnel NOMEADO: URL fixa. Coloque o token do túnel em CF_TUNNEL_TOKEN
+    # (no .env, fora do Git). Quick tunnel (--url) dá hostname aleatório por boot.
+    command: tunnel --no-autoupdate --protocol http2 run
+    environment:
+      # Falha cedo e explícito se o token do túnel nomeado não estiver no .env
+      TUNNEL_TOKEN: ${CF_TUNNEL_TOKEN:?defina CF_TUNNEL_TOKEN no .env (túnel nomeado)}
     depends_on:
       - app
     restart: unless-stopped
