@@ -38,22 +38,50 @@ ROTAS_PUBLICAS = {
 }
 
 # Proxies confiáveis (nginx no host, cloudflared no container). Só eles
-# podem declarar o IP do cliente.
+# podem declarar o IP do cliente e o protocolo externo. Aceita IP solto e
+# rede CIDR (ex.: a subrede do docker compose, para o cloudflared).
 PROXIES_CONFIAVEIS = {
     ip.strip()
     for ip in os.getenv("PROXIES_CONFIAVEIS", "127.0.0.1,::1,172.19.0.1").split(",")
     if ip.strip()
 }
+REDES_CONFIAVEIS = []
+for _item in os.getenv("PROXIES_CONFIAVEIS", "127.0.0.1,::1,172.19.0.1").split(","):
+    _item = _item.strip()
+    if not _item:
+        continue
+    try:
+        REDES_CONFIAVEIS.append(ipaddress.ip_network(_item, strict=False))
+    except ValueError:
+        pass  # não é rede: pode ser IP solto, coberto por PROXIES_CONFIAVEIS
+
+
+def proxy_confiavel(peer):
+    """Peer pode declarar cabeçalhos de proxy? (IP exato ou dentro de CIDR)"""
+    if peer in PROXIES_CONFIAVEIS:
+        return True
+    try:
+        endereco = ipaddress.ip_address(peer)
+    except ValueError:
+        return False
+    return any(endereco in rede for rede in REDES_CONFIAVEIS)
 
 
 def ip_cliente(peer, cabecalhos):
-    """IP real do cliente; cabeçalho de proxy só vale se o peer for confiável."""
-    if peer not in PROXIES_CONFIAVEIS:
+    """IP real do cliente; cabeçalho de proxy só vale se o peer for confiável.
+
+    Em `X-Forwarded-For` vale a ÚLTIMA entrada: é a que o proxy confiável
+    anexou (nginx/Cloudflare anexam). As anteriores vêm do cliente e podem
+    ser forjadas.
+    """
+    if not proxy_confiavel(peer):
         return peer
-    candidatos = [
-        (cabecalhos.get("x-real-ip") or "").strip(),
-        (cabecalhos.get("x-forwarded-for") or "").split(",")[0].strip(),
+    candidatos = [(cabecalhos.get("x-real-ip") or "").strip()]
+    encadeados = [
+        entrada.strip()
+        for entrada in (cabecalhos.get("x-forwarded-for") or "").split(",")
     ]
+    candidatos.extend(reversed(encadeados))
     for candidato in candidatos:
         if not candidato:
             continue
@@ -101,20 +129,27 @@ class Manipulador(BaseHTTPRequestHandler):
         cabecalhos = {nome.lower(): valor for nome, valor in self.headers.items()}
         dados["_headers"] = cabecalhos
         dados["_cookies"] = self._ler_cookies(cabecalhos.get("cookie") or "")
-        dados["_proto"] = (
-            (cabecalhos.get("x-forwarded-proto") or "http").split(",")[0].strip()
-        )
+        confiavel = proxy_confiavel(self.client_address[0])
+        # Proto externo: só cabeçalho de proxy confiável conta. Sem proxy
+        # (acesso direto à origem), a conexão é HTTP puro por definição.
+        proto_cabecalho = ""
+        if confiavel:
+            proto_cabecalho = (
+                (cabecalhos.get("x-forwarded-proto") or "").strip().split(",")[0].lower()
+            )
+        dados["_proto"] = proto_cabecalho or "http"
         dados["_ip"] = ip_cliente(self.client_address[0], cabecalhos)
 
         # Segurança de transporte: só o proxy pode dizer o protocolo externo.
-        proto_cabecalho = (cabecalhos.get("x-forwarded-proto") or "").strip().lower()
-        self._https = proto_cabecalho == "https"
+        self._https = dados["_proto"] == "https"
         self._privado = caminho.startswith("/api/") or caminho in (
             "/login",
             "/registrar",
         )
-        if proto_cabecalho == "http":
-            host = cabecalhos.get("host") or "localhost"
+        if confiavel and proto_cabecalho == "http":
+            # HOST_CANONICO evita 301 refletindo o Host do request
+            # (envenenamento de cache de intermediários).
+            host = config.HOST_CANONICO or (cabecalhos.get("host") or "localhost")
             alvo = "https://{}{}".format(host, self.path)
             return self._enviar(*respostas.redirecionar(alvo, status=301))
 

@@ -1,11 +1,12 @@
 import email
 import io
+import ipaddress
 import unittest
 
 import app
 
 
-def _handler(cabecalhos=None, caminho="/api/status"):
+def _handler(cabecalhos=None, caminho="/api/status", peer="200.1.2.3"):
     """Manipulador HTTP com socket/headers falsos, sem abrir porta."""
     mensagem = email.message.Message()
     for nome, valor in (cabecalhos or {}).items():
@@ -15,7 +16,7 @@ def _handler(cabecalhos=None, caminho="/api/status"):
     manipulador.requestline = "GET {} HTTP/1.1".format(caminho)
     manipulador.headers = mensagem
     manipulador.wfile = io.BytesIO()
-    manipulador.client_address = ("200.1.2.3", 12345)
+    manipulador.client_address = (peer, 12345)
     manipulador.protocol_version = "HTTP/1.1"
     manipulador.request_version = "HTTP/1.1"
     manipulador.close_connection = False
@@ -26,20 +27,33 @@ def _handler(cabecalhos=None, caminho="/api/status"):
 class TestIpCliente(unittest.TestCase):
     def setUp(self):
         self.proxies_originais = app.PROXIES_CONFIAVEIS
+        self.redes_originais = app.REDES_CONFIAVEIS
         app.PROXIES_CONFIAVEIS = {"127.0.0.1"}
+        app.REDES_CONFIAVEIS = []
 
     def tearDown(self):
         app.PROXIES_CONFIAVEIS = self.proxies_originais
+        app.REDES_CONFIAVEIS = self.redes_originais
 
     def test_proxy_confiavel_usa_x_real_ip(self):
         self.assertEqual(
             app.ip_cliente("127.0.0.1", {"x-real-ip": "200.1.2.3"}), "200.1.2.3"
         )
 
-    def test_proxy_usa_primeiro_x_forwarded_for(self):
+    def test_proxy_usa_ultimo_x_forwarded_for(self):
+        """A última entrada é a que o proxy confiável anexou (nginx/CF)."""
         self.assertEqual(
             app.ip_cliente(
-                "127.0.0.1", {"x-forwarded-for": "200.1.2.3, 10.0.0.1"}
+                "127.0.0.1", {"x-forwarded-for": "10.0.0.1, 200.1.2.3"}
+            ),
+            "200.1.2.3",
+        )
+
+    def test_rede_cidr_confiavel(self):
+        app.REDES_CONFIAVEIS = [ipaddress.ip_network("172.28.0.0/16")]
+        self.assertEqual(
+            app.ip_cliente(
+                "172.28.0.4", {"x-forwarded-for": "200.1.2.3"}
             ),
             "200.1.2.3",
         )
@@ -56,8 +70,8 @@ class TestIpCliente(unittest.TestCase):
 
 
 class TestSegurancaHttp(unittest.TestCase):
-    def _resposta(self, cabecalhos, caminho="/api/status"):
-        manipulador = _handler(cabecalhos, caminho)
+    def _resposta(self, cabecalhos, caminho="/api/status", peer="127.0.0.1"):
+        manipulador = _handler(cabecalhos, caminho, peer=peer)
         manipulador._despachar("GET")
         return manipulador.wfile.getvalue().decode("utf-8", "replace").lower()
 
@@ -69,6 +83,34 @@ class TestSegurancaHttp(unittest.TestCase):
         self.assertIn(
             "location: https://sismosbr.duckdns.org/api/status", resposta
         )
+
+    def test_redirecionamento_usa_host_canonico(self):
+        """301 não reflete o Host do request (cache poisoning)."""
+        original = app.config.HOST_CANONICO
+        app.config.HOST_CANONICO = "sismosbr.duckdns.org"
+        try:
+            resposta = self._resposta(
+                {"x-forwarded-proto": "http", "host": "malicioso.example"}
+            )
+        finally:
+            app.config.HOST_CANONICO = original
+        self.assertIn(
+            "location: https://sismosbr.duckdns.org/api/status", resposta
+        )
+        self.assertNotIn("malicioso.example", resposta)
+
+    def test_spoof_de_proto_sem_proxy_confiavel_ignorado(self):
+        """Acesso direto à origem: header de proto não ativa HSTS/301."""
+        resposta = self._resposta(
+            {"x-forwarded-proto": "https"}, peer="200.1.2.3"
+        )
+        self.assertNotIn("strict-transport-security", resposta)
+        self.assertNotIn("location:", resposta)
+        resposta_http = self._resposta(
+            {"x-forwarded-proto": "http", "host": "spoof.example"},
+            peer="200.1.2.3",
+        )
+        self.assertNotIn("location: https", resposta_http)
 
     def test_sem_cabecalho_proxy_nao_redireciona(self):
         resposta = self._resposta({})
